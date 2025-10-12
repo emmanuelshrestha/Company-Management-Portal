@@ -43,3 +43,31 @@ if (isset($_GET['token'])) {
     $message = "<p style='color:red;'>No token provided!</p>";
 }
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .error { color: red; font-size: 14px; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+    </style>
+    <script>
+        <?php if ($redirect) { ?>
+            setTimeout(() => {
+                window.location.href = 'login.php'; // Adjust to your login page URL
+            }, 3000);
+        <?php } ?>
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Email Verification</h1>
+        <?php echo $message; ?>
+        <p><a href="../../index.php">Return to Home</a></p>
+    </div>
+</body>
+</html>
