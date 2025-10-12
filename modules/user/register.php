@@ -1,8 +1,8 @@
 <?php
-require __DIR__ .'/../../config/db.php';
-require __DIR__ .'/../../lib/phpmailer/Exception.php';
-require __DIR__ .'/../../lib/phpmailer/PHPMailer.php';
-require __DIR__ .'/../../lib/phpmailer/SMTP.php';
+require __DIR__ . '/../../config/db.php'; 
+require __DIR__ . '/../../lib/phpmailer/Exception.php'; 
+require __DIR__ . '/../../lib/phpmailer/PHPMailer.php'; 
+require __DIR__ . '/../../lib/phpmailer/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -139,40 +139,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .error { color: red; font-size: 14px; }
         body { font-family: Arial, sans-serif; margin: 20px; }
     </style>
-    <script>
-        function validateForm() {
-            let name     = document.forms["userForm"]["name"].value.trim();
-            let email    = document.forms["userForm"]["email"].value.trim();
-            let password = document.forms["userForm"]["password"].value.trim();
-            let valid = true;
-
-            document.getElementById("nameError").innerText = "";
-            document.getElementById("emailError").innerText = "";
-            document.getElementById("passwordError").innerText = "";
-
-            if (name === "") {
-                document.getElementById("nameError").innerText = "Name is required!";
-                valid = false;
-            }
-
-            let emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailPattern.test(email)) {
-                document.getElementById("emailError").innerText = "Enter a valid email!";
-                valid = false;
-            }
-
-            if (password.length < 6) {
-                document.getElementById("passwordError").innerText = "Password must be at least 6 characters!";
-                valid = false;
-            }
-
-            return valid;
-        }
-    </script>
+    <script src = 'js/user.js'></script>
 </head>
 <body>
     <h1>Register User</h1>
-    <a href="index.php">Home</a> | <a href="read.php">View Users</a>
+    <a href="../../index.php">Home</a> | <a href="read.php">View Users</a>
     <br><br>
 
     <?php if (!empty($message)) echo $message; ?>

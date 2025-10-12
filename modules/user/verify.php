@@ -1,35 +1,45 @@
 <?php
 require __DIR__ .'/../../config/db.php';
 
-if(isset($_GET['token'])){
-    $token = $_GET['token'];
+$message = "";
+$redirect = false;
 
-    // Step 3.2: Check if token exists in the database
+if (isset($_GET['token'])) {
+    $token = filter_var($_GET['token'], FILTER_SANITIZE_STRING);
+
+    // Check if token exists in the database
     $stmt = $conn->prepare("SELECT id, status FROM users WHERE verification_token = ?");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if($result->num_rows == 1){
-        $user = $result->fetch_assoc();
-
-        // Step 3.3: Check if already verified
-        if($user['status'] == 'Verified'){
-            echo "Your email is already verified!";
-        } else {
-            // Step 3.4: Update status to Verified
-            $update = $conn->prepare("UPDATE users SET status = 'Verified' WHERE id = ?");
-            $update->bind_param("i", $user['id']);
-            if($update->execute()){
-                echo "✅ Email verified successfully!";
-            } else {
-                echo "Error updating status: " . $update->error;
-            }
-        }
+    if ($stmt === false) {
+        $message = "<p style='color:red;'>Database error: " . htmlspecialchars($conn->error) . "</p>";
     } else {
-        echo "Invalid verification token!";
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows == 1) {
+            $user = $result->fetch_assoc();
+
+            // Check if already verified
+            if ($user['status'] == 'Verified') {
+                $message = "<p style='color:orange;'>Your email is already verified!</p>";
+            } else {
+                // Update status to Verified
+                $update = $conn->prepare("UPDATE users SET status = 'Verified', verification_token = NULL WHERE id = ?");
+                $update->bind_param("i", $user['id']);
+                if ($update->execute()) {
+                    $message = "<p style='color:green;'>✅ Email verified successfully! You will be redirected to the login page in 3 seconds.</p>";
+                    $redirect = true;
+                } else {
+                    $message = "<p style='color:red;'>Error updating status: " . htmlspecialchars($update->error) . "</p>";
+                }
+                $update->close();
+            }
+        } else {
+            $message = "<p style='color:red;'>Invalid verification token!</p>";
+        }
+        $stmt->close();
     }
 } else {
-    echo "No token provided!";
+    $message = "<p style='color:red;'>No token provided!</p>";
 }
 ?>

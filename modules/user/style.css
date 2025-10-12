@@ -1,21 +1,33 @@
+/* -------------------------------------------------
+   Global resets & base typography
+   ------------------------------------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f5f7fa;
     color: #333;
-    margin: 20px;
+    margin: 0;
     padding: 0;
+    line-height: 1.6;
 }
 
+/* -------------------------------------------------
+   Headings & links
+   ------------------------------------------------- */
 h1 {
     color: #2c3e50;
     text-align: center;
-    margin-bottom: 20px;
+    margin: 20px 0;
 }
 
 a {
     text-decoration: none;
     color: #3498db;
-    margin: 0 10px;
     transition: color 0.3s;
 }
 
@@ -23,6 +35,27 @@ a:hover {
     color: #2980b9;
 }
 
+/* -------------------------------------------------
+   Layout containers (used on both pages)
+   ------------------------------------------------- */
+.container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Card used on verify.php (also works for any simple centered block) */
+.card {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* -------------------------------------------------
+   Form styling (register.php)
+   ------------------------------------------------- */
 form {
     background-color: #ffffff;
     max-width: 450px;
@@ -40,46 +73,103 @@ label {
 
 input[type="text"],
 input[type="email"],
-input[type="number"],
 input[type="password"],
-button {
+input[type="number"] {
     width: 100%;
     padding: 12px 15px;
     margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 15px;
-    box-sizing: border-box;
-    transition: all 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="number"]:focus,
-input[type="password"]:focus {
+input:focus {
     border-color: #3498db;
     outline: none;
     box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
 }
 
-button {
-    background-color: #3498db;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #2980b9;
-}
-
+/* Error text shown below inputs */
 .error {
     color: #e74c3c;
     font-size: 13px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    display: block;
 }
 
+/* -------------------------------------------------
+   Buttons (shared)
+   ------------------------------------------------- */
+button,
+.btn {
+    display: inline-block;
+    width: 100%;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    text-align: center;
+    text-decoration: none;
+}
+
+/* Primary button (register) */
+button,
+.btn-primary {
+    background-color: #3498db;
+    color: #fff;
+}
+
+button:hover,
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+/* Optional secondary button (e.g., “Resend email” on verify) */
+.btn-secondary {
+    background-color: #95a5a6;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+/* -------------------------------------------------
+   Message styling (verify.php & flash messages)
+   ------------------------------------------------- */
+.message {
+    margin: 20px 0;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.msg-success {
+    background-color: #d5f5e3;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+
+.msg-error {
+    background-color: #fadbd8;
+    color: #c0392b;
+    border: 1px solid #c0392b;
+}
+
+.msg-info {
+    background-color: #d6eaf8;
+    color: #2980b9;
+    border: 1px solid #2980b9;
+}
+
+/* -------------------------------------------------
+   Table styling (optional – keep if you have a “view users” page)
+   ------------------------------------------------- */
 table {
     width: 80%;
     margin: 20px auto;
@@ -89,7 +179,8 @@ table {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
 }
 
-th, td {
+th,
+td {
     padding: 12px 15px;
     text-align: left;
 }
@@ -109,8 +200,22 @@ tr:hover {
     transition: background-color 0.3s;
 }
 
+/* -------------------------------------------------
+   Responsive adjustments
+   ------------------------------------------------- */
 @media screen and (max-width: 600px) {
-    table, form {
+    .container,
+    form,
+    .card,
+    table {
         width: 95%;
+        margin: 10px auto;
+        padding: 15px;
+    }
+
+    button,
+    .btn {
+        font-size: 14px;
+        padding: 10px;
     }
 }
