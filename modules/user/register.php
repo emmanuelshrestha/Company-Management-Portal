@@ -1,8 +1,8 @@
 <?php
-require 'db.php';
-require 'src/Exception.php';
-require 'src/PHPMailer.php';
-require 'src/SMTP.php';
+require __DIR__ .'/../../config/db.php';
+require __DIR__ .'/../../lib/phpmailer/Exception.php';
+require __DIR__ .'/../../lib/phpmailer/PHPMailer.php';
+require __DIR__ .'/../../lib/phpmailer/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
