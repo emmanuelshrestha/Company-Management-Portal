@@ -68,14 +68,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $mail = new PHPMailer(true);
                         try {
                             $mail->isSMTP();
-                            $mail->Host       = 'live.smtp.mailtrap.io';
+                            $mail->Host       = $env['SMTP_HOST'];
                             $mail->SMTPAuth   = true;
-                            $mail->Username   = 'api'; // replace
-                            $mail->Password   = '158e6db39565c5b9cf36205dc319bbc7'; // replace
-                            $mail->Port       =  587;
-                            $mail->SMTPSecure = 'tls';
+                            $mail->Username   = $env['SMTP_USERNAME'];
+                            $mail->Password   = $env['SMTP_PASSWORD'];
+                            $mail->Port       = $env['SMTP_PORT'];
+                            $mail->SMTPSecure = $env['SMTP_SECURE'];
 
-                            $mail->setFrom('hello@demomailtrap.co', 'Your App'); // set a valid from
+                            $mail->setFrom($env['SMTP_FROM_EMAIL'], $env['SMTP_FROM_NAME']);
                             $mail->addAddress($email, $name);
 
                             $mail->isHTML(true);
