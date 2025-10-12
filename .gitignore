@@ -1,0 +1,12 @@
+# Ignore environment and sensitive files
+.env
+db.php
+
+# Ignore system files
+*.log
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/project settings
+.vscode/
+.idea/
