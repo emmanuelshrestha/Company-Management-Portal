@@ -47,12 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['user_id'] = $id;
                         $_SESSION['user_name'] = $name;
                         $_SESSION['user_email'] = $db_email;
-                        
-                        $message = "Login successful! Welcome back, " . htmlspecialchars($name) . "!";
-                        $messageType = "success";
-                        
-                        // Redirect to dashboard after 2 seconds
-                        header("refresh:2;url=dashboard.php");
+
+                        // Redirect to dashboard immediately after successful login
+                        header("Location: ../../dashboard/dashboard.php");
+                        exit();
                     } else {
                         $message = "Please verify your email address before logging in.";
                         $messageType = "error";
