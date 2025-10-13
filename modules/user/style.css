@@ -674,3 +674,48 @@
         margin: -8px 0 18px 0;
     }
 }
+
+
+/* Password Requirements Styling */
+.login-page .password-requirements {
+    margin: 20px 0;
+}
+
+.login-page .password-requirements p {
+    color: #2d3748;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.login-page .requirements-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.login-page .requirement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #718096;
+    transition: all 0.2s;
+}
+
+.login-page .requirement::before {
+    content: '✕';
+    color: #e53e3e;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.login-page .requirement.valid {
+    color: #38a169;
+}
+
+.login-page .requirement.valid::before {
+    content: '✓';
+    color: #38a169;
+}
