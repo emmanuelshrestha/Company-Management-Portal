@@ -157,15 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // Fetch posts from user and their friends
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT DISTINCT p.id, p.content, p.created_at, u.name, u.id as user_id
+$sql = "SELECT DISTINCT p.id, p.content, p.created_at, p.image_filename, p.image_caption, u.name, u.id as user_id
         FROM posts p 
         JOIN users u ON p.user_id = u.id 
         WHERE p.user_id = ? 
            OR p.user_id IN (
-               -- Friends where current user sent the request
                SELECT friend_id FROM friends WHERE user_id = ? AND status = 'approved'
                UNION
-               -- Friends where current user received the request  
                SELECT user_id FROM friends WHERE friend_id = ? AND status = 'approved'
            )
         ORDER BY p.created_at DESC 
@@ -490,6 +488,254 @@ $debugStmt->close();
             word-wrap: break-word;
         }
 
+        /* Post Images */
+        .post-image {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .post-image img {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-image img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .image-caption {
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 14px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: relative;
+            margin: auto;
+            display: block;
+            width: auto;
+            max-width: 90%;
+            max-height: 90%;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 12px;
+            animation: zoom 0.3s;
+        }
+
+        @keyframes zoom {
+            from {transform: translateY(-50%) scale(0.9); opacity: 0;}
+            to {transform: translateY(-50%) scale(1); opacity: 1;}
+        }
+
+        .modal-caption {
+            text-align: center;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .close-modal:hover {
+            background: rgba(0,0,0,0.8);
+        }
+
+        .modal-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s;
+        }
+
+        .modal-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Post Images - Facebook Style (Fully Visible) */
+        .post-image-full {
+            margin: 15px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .post-image-auto {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: none; /* Remove height restrictions */
+        }
+
+        .image-caption-full {
+            padding: 12px 16px;
+            color: #65676b;
+            font-size: 14px;
+            text-align: left;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+            line-height: 1.4;
+        }
+
+        /* Text + Image combination */
+        .post-content:not(:empty) + .post-image-full {
+            margin-top: 12px;
+        }
+
+        /* Remove any hover effects that might suggest it's clickable */
+        .post-image-auto {
+            cursor: default;
+        }
+
+        .post-image-auto:hover {
+            transform: none;
+        }
+
+        /* Ensure proper spacing */
+        .post-stats {
+            margin-top: 15px;
+        }
+
+        .post-actions {
+            margin-top: 10px;
+        }
+
+        /* Remove the image actions section since we don't need "View Full Size" anymore */
+        .image-actions {
+            display: none;
+        }
+
+        /* For very large images, we can add a subtle max-width to maintain layout */
+        .post-image-auto {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Keep the modal for those who might want to see details, but make it optional */
+        .post-image-full {
+            position: relative;
+        }
+
+        /* Optional: Add a subtle zoom on hover for better UX (like Facebook) */
+        .post-image-auto {
+            transition: transform 0.2s ease;
+        }
+
+        .post-image-full:hover .post-image-auto {
+            transform: scale(1.01);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .post-image-full {
+                margin: 12px 0;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .image-caption-full {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+        }
+
+        /* For landscape vs portrait images - maintain aspect ratio */
+        .post-image-auto {
+            object-fit: contain;
+        }
+
+        /* Remove any previous modal-related styles that might interfere */
+        .post-image-preview,
+        .image-action-btn {
+            display: none;
+        }
+
+        .image-loading {
+            background: #f7fafc;
+            border-radius: 12px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+        }
+
+        /* Responsive images */
+        @media (max-width: 768px) {
+            .post-image img {
+                max-height: 300px;
+            }
+            
+            .modal-content {
+                max-width: 95%;
+                max-height: 80%;
+            }
+            
+            .close-modal {
+                top: 10px;
+                right: 20px;
+                font-size: 30px;
+                width: 40px;
+                height: 40px;
+            }
+        }
+
         @media (max-width: 768px) {
             .post-header {
                 flex-direction: column;
@@ -616,6 +862,18 @@ $debugStmt->close();
                             <div class="post-content">
                                 <?php echo htmlspecialchars($post['content']); ?>
                             </div>
+
+                            <!-- Image Display - Fully Visible like Facebook -->
+                            <?php if (!empty($post['image_filename'])): ?>
+                                <div class="post-image-full">
+                                    <img src="../../uploads/posts/<?php echo htmlspecialchars($post['image_filename']); ?>" 
+                                        alt="<?php echo !empty($post['image_caption']) ? htmlspecialchars($post['image_caption']) : 'Post image'; ?>"
+                                        class="post-image-auto">
+                                    <?php if (!empty($post['image_caption'])): ?>
+                                        <div class="image-caption-full"><?php echo htmlspecialchars($post['image_caption']); ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                             
                             <div class="post-stats">
                                 <span class="like-count"><?php echo $post['like_count']; ?> likes</span>
@@ -649,7 +907,19 @@ $debugStmt->close();
                 </div>
             <?php endif; ?>
         </div>
+
+        <!-- Image Modal -->
+        <div id="imageModal" class="image-modal">
+            <span class="close-modal" onclick="closeImageModal()">&times;</span>
+            <img class="modal-content" id="modalImage">
+            <div class="modal-caption" id="modalCaption"></div>
+            <div class="modal-controls">
+                <button class="modal-btn" onclick="downloadImage()">Download</button>
+                <button class="modal-btn" onclick="shareImage()">Share</button>
+            </div>
+        </div>
     </div>
+
 
     <script src="js/news_feed.js"></script>
 </body>

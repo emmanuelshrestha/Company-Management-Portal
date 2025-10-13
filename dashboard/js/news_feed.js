@@ -1,5 +1,69 @@
-// Debug version with better error handling
-console.log('News Feed JS loaded');
+// Image Modal functionality
+function openImageModal(imageFilename, caption) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const captionText = document.getElementById('modalCaption');
+    
+    modal.style.display = 'block';
+    modalImg.src = '../../uploads/posts/' + imageFilename;
+    captionText.innerHTML = caption || '';
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside the image
+document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeImageModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+});
+
+// Download image function
+function downloadImage() {
+    const imageSrc = document.getElementById('modalImage').src;
+    const link = document.createElement('a');
+    link.href = imageSrc;
+    link.download = 'connecthub-image-' + Date.now() + '.jpg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Share image function (basic implementation)
+function shareImage() {
+    if (navigator.share) {
+        const imageSrc = document.getElementById('modalImage').src;
+        const caption = document.getElementById('modalCaption').textContent;
+        
+        navigator.share({
+            title: 'ConnectHub Image',
+            text: caption || 'Check out this image from ConnectHub',
+            url: imageSrc
+        }).catch(error => console.log('Error sharing:', error));
+    } else {
+        // Fallback: copy image URL to clipboard
+        const imageSrc = document.getElementById('modalImage').src;
+        navigator.clipboard.writeText(imageSrc).then(() => {
+            alert('Image URL copied to clipboard!');
+        }).catch(err => {
+            alert('Share not supported on this browser. Image URL: ' + imageSrc);
+        });
+    }
+}
 
 // Like functionality
 document.querySelectorAll('.like-btn').forEach(button => {
@@ -16,12 +80,6 @@ document.querySelectorAll('.like-btn').forEach(button => {
             formData.append('post_id', postId);
             formData.append('csrf_token', getCsrfToken());
             
-            console.log('Sending like request:', {
-                action: 'like_post',
-                post_id: postId,
-                csrf_token: getCsrfToken()
-            });
-
             const response = await fetch('news_feed.php', {
                 method: 'POST',
                 headers: {
@@ -30,7 +88,6 @@ document.querySelectorAll('.like-btn').forEach(button => {
                 body: formData
             });
 
-            console.log('Response status:', response.status);
             const data = await response.json();
             console.log('Response data:', data);
 
@@ -58,15 +115,12 @@ document.querySelectorAll('.comment-btn').forEach(button => {
     button.addEventListener('click', function() {
         const postId = this.getAttribute('data-post-id');
         const commentsSection = document.getElementById(`comments-${postId}`);
-        const commentInput = commentsSection.querySelector('.comment-input');
+        
+        console.log('Comment button clicked for post:', postId);
         
         if (commentsSection.style.display === 'none') {
             commentsSection.style.display = 'block';
             loadComments(postId);
-            // Auto-focus on comment input
-            setTimeout(() => {
-                commentInput.focus();
-            }, 100);
         } else {
             commentsSection.style.display = 'none';
         }
@@ -90,13 +144,6 @@ document.querySelectorAll('.btn-comment').forEach(button => {
                 formData.append('content', content);
                 formData.append('csrf_token', getCsrfToken());
 
-                console.log('Sending comment request:', {
-                    action: 'add_comment',
-                    post_id: postId,
-                    content: content,
-                    csrf_token: getCsrfToken()
-                });
-
                 const response = await fetch('news_feed.php', {
                     method: 'POST',
                     headers: {
@@ -105,7 +152,6 @@ document.querySelectorAll('.btn-comment').forEach(button => {
                     body: formData
                 });
 
-                console.log('Comment response status:', response.status);
                 const data = await response.json();
                 console.log('Comment response data:', data);
 
@@ -144,10 +190,8 @@ async function loadComments(postId) {
     const commentsList = document.getElementById(`comments-list-${postId}`);
     
     try {
-        // Show loading
         commentsList.innerHTML = '<p>Loading comments...</p>';
         
-        // Fetch comments from server
         const formData = new URLSearchParams();
         formData.append('action', 'load_comments');
         formData.append('post_id', postId);
@@ -221,8 +265,29 @@ function formatCommentDate(dateString) {
 
 function getCsrfToken() {
     const token = document.getElementById('csrf_token')?.value;
-    console.log('CSRF Token found:', token);
     return token || '';
 }
 
-console.log('All event listeners attached');
+// Auto-refresh the feed every 30 seconds
+setInterval(() => {
+    console.log('Feed refresh check...');
+}, 30000);
+
+// Lazy loading for images (performance improvement)
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.post-image img');
+    
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+
+    images.forEach(img => {
+        imageObserver.observe(img);
+    });
+});

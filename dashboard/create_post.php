@@ -32,35 +32,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msgClass = "msg-error";
     } else {
         $content = trim($_POST['content'] ?? '');
+        $image_caption = trim($_POST['image_caption'] ?? '');
+        $image_filename = null;
         
         // Validate content
-        if (empty($content)) {
-            $message = "Post content is required.";
+        if (empty($content) && empty($_FILES['post_image']['name'])) {
+            $message = "Please enter some content or select an image to post.";
             $msgClass = "msg-error";
         } elseif (strlen($content) > 500) {
             $message = "Post content cannot exceed 500 characters.";
             $msgClass = "msg-error";
         } else {
-            // Insert post into database
-            $sql = "INSERT INTO posts (user_id, content) VALUES (?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("is", $_SESSION['user_id'], $content);
-            
-            if ($stmt->execute()) {
-                $message = "Post created successfully!";
-                $msgClass = "msg-success";
-                
-                // Redirect to news feed after a brief delay
-                header('Refresh: 2; URL=news_feed.php');
-            } else {
-                $message = "Error creating post. Please try again.";
-                $msgClass = "msg-error";
+            // Handle image upload
+            if (!empty($_FILES['post_image']['name'])) {
+                $uploadResult = handleImageUpload($_FILES['post_image']);
+                if ($uploadResult['success']) {
+                    $image_filename = $uploadResult['filename'];
+                } else {
+                    $message = $uploadResult['error'];
+                    $msgClass = "msg-error";
+                }
             }
-            $stmt->close();
+            
+            // If no errors, insert post
+            if (empty($message)) {
+                if ($image_filename) {
+                    $sql = "INSERT INTO posts (user_id, content, image_filename, image_caption) VALUES (?, ?, ?, ?)";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bind_param("isss", $_SESSION['user_id'], $content, $image_filename, $image_caption);
+                } else {
+                    $sql = "INSERT INTO posts (user_id, content) VALUES (?, ?)";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bind_param("is", $_SESSION['user_id'], $content);
+                }
+                
+                if ($stmt->execute()) {
+                    $message = "Post created successfully!";
+                    $msgClass = "msg-success";
+                    
+                    // Redirect to news feed after a brief delay
+                    header('Refresh: 2; URL=news_feed.php');
+                } else {
+                    $message = "Error creating post. Please try again.";
+                    $msgClass = "msg-error";
+                }
+                $stmt->close();
+            }
         }
         
         // Regenerate CSRF token
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+}
+
+// Function to handle image upload
+function handleImageUpload($file) {
+    $uploadDir = __DIR__ . '/../../uploads/posts/';
+    
+    // Create directory if it doesn't exist
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    $maxFileSize = 5 * 1024 * 1024; // 5MB
+    
+    // Check for errors
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'error' => 'File upload error.'];
+    }
+    
+    // Check file type
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    
+    if (!in_array($mimeType, $allowedTypes)) {
+        return ['success' => false, 'error' => 'Only JPG, PNG, GIF, and WebP images are allowed.'];
+    }
+    
+    // Check file size
+    if ($file['size'] > $maxFileSize) {
+        return ['success' => false, 'error' => 'Image size must be less than 5MB.'];
+    }
+    
+    // Generate unique filename
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = uniqid() . '_' . time() . '.' . $extension;
+    $filepath = $uploadDir . $filename;
+    
+    // Move uploaded file
+    if (move_uploaded_file($file['tmp_name'], $filepath)) {
+        return ['success' => true, 'filename' => $filename];
+    } else {
+        return ['success' => false, 'error' => 'Failed to save image.'];
     }
 }
 ?>
@@ -130,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-family: inherit;
             resize: vertical;
             transition: border-color 0.3s, box-shadow 0.3s;
+            margin-bottom: 15px;
         }
         
         .post-textarea:focus {
@@ -143,6 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #718096;
             font-size: 14px;
             margin-top: 5px;
+            margin-bottom: 15px;
         }
         
         .char-counter.warning {
@@ -151,6 +218,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .char-counter.error {
             color: #e53e3e;
+        }
+        
+        .image-upload-section {
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .image-upload-section:hover {
+            border-color: #667eea;
+        }
+        
+        .image-upload-section.dragover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #cbd5e0;
+            margin-bottom: 10px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #5a67d8;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .remove-image {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        .remove-image:hover {
+            background: #c53030;
+        }
+        
+        .image-caption {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .image-caption:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
         
         .post-actions {
@@ -180,46 +332,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: not-allowed;
         }
         
-        .preview-section {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+        .file-info {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 10px;
+        }
+
+        .upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .upload-header h4 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .upload-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #e2e8f0;
             border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .upload-area.has-image {
+            border-style: solid;
+            border-color: #667eea;
             padding: 20px;
-            margin-top: 20px;
+        }
+
+        .upload-placeholder {
+            color: #64748b;
+        }
+
+        .upload-placeholder .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+
+        .preview-actions {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .caption-section {
+            margin-top: 15px;
             display: none;
         }
-        
-        .preview-section h4 {
-            margin: 0 0 10px 0;
-            color: #2d3748;
+
+        .caption-section.visible {
+            display: block;
         }
-        
-        .preview-content {
-            color: #4a5568;
-            line-height: 1.5;
+
+        .upload-area .image-preview {
+            width: 100%;
         }
-        
-        .tips-section {
-            background: #f0fff4;
-            border: 1px solid #9ae6b4;
+
+        /* Make the image preview more prominent */
+        .image-preview {
+            text-align: center;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
             border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 3px solid white;
         }
-        
-        .tips-section h4 {
-            margin: 0 0 10px 0;
-            color: #276749;
+
+        .remove-image {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
         }
-        
-        .tips-section ul {
-            margin: 0;
-            padding-left: 20px;
-            color: #2d3748;
-        }
-        
-        .tips-section li {
-            margin-bottom: 5px;
+
+        .remove-image:hover {
+            background: #c53030;
+            transform: translateY(-1px);
         }
         
         @media (max-width: 768px) {
@@ -248,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="header">
             <div class="welcome-section">
                 <h1>Create New Post</h1>
-                <p>Share your thoughts with your friends</p>
+                <p>Share your thoughts and images with your friends</p>
             </div>
             <div class="user-info">
                 <div class="user-avatar">
@@ -261,13 +477,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Navigation -->
         <div class="nav-links">
+            <a href="../index.php">Home</a> | 
             <a href="dashboard.php">Dashboard</a> | 
             <a href="profile.php">Profile</a> | 
             <a href="add_friend.php">Add Friends</a> | 
-            <a href="list_friends.php">Friends List</a> | 
-            <a href="create_post.php">Create Post</a> | 
-            <a href="news_feed.php">News Feed</a> | 
-            <a href="logout.php">Logout</a>
+            <a href="list_friends.php">Friends List</a> |
+            <a href="news_feed.php">News Feed</a>
         </div>
 
         <!-- Messages -->
@@ -293,9 +508,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <form method="POST" action="" id="postForm">
+                <form method="POST" action="" id="postForm" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                     
+                    <!-- Text Content -->
                     <div class="form-group">
                         <textarea 
                             name="content" 
@@ -309,10 +525,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
 
-                    <!-- Preview Section -->
-                    <div class="preview-section" id="previewSection">
-                        <h4>Preview:</h4>
-                        <div class="preview-content" id="previewContent"></div>
+                    <!-- Image Upload -->
+                    <div class="image-upload-section" id="imageUploadSection">
+                        <div class="upload-header">
+                            <h4>📷 Add a Photo (Optional)</h4>
+                            <div class="upload-actions">
+                                <label for="post_image" class="file-input-label">Choose Image</label>
+                                <button type="button" class="action-btn secondary" id="toggleUpload" onclick="toggleUploadSection()">Hide</button>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-placeholder" id="uploadPlaceholder">
+                                <div class="upload-icon">🖼️</div>
+                                <p><strong>Drag & drop an image here</strong></p>
+                                <p>or click "Choose Image" above</p>
+                                <div class="file-info">Supports JPG, PNG, GIF, WebP • Max 5MB</div>
+                            </div>
+                            
+                            <!-- Image Preview -->
+                            <div class="image-preview" id="imagePreview">
+                                <img id="previewImage" src="#" alt="Preview">
+                                <div class="preview-actions">
+                                    <button type="button" class="remove-image" id="removeImage">Remove Image</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <input type="file" id="post_image" name="post_image" class="file-input" accept="image/*">
+                        
+                        <!-- Image Caption -->
+                        <div class="caption-section" id="captionSection">
+                            <input type="text" name="image_caption" id="image_caption" class="image-caption" placeholder="Add a caption for your image...">
+                        </div>
                     </div>
 
                     <div class="post-actions">
@@ -323,21 +568,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </form>
             </div>
-
-            <!-- Tips Section -->
-            <div class="tips-section">
-                <h4>💡 Posting Tips</h4>
-                <ul>
-                    <li>Keep your posts respectful and positive</li>
-                    <li>Share interesting thoughts or updates</li>
-                    <li>Tag friends using @username (coming soon)</li>
-                    <li>Posts are visible to your friends</li>
-                    <li>You can edit or delete your posts later</li>
-                </ul>
-            </div>
         </div>
     </div>
 
-    <script src="js/create_post.js"></script>
+    <script>
+        const contentTextarea = document.getElementById('content');
+        const charCounter = document.getElementById('charCounter');
+        const charCount = document.getElementById('charCount');
+        const fileInput = document.getElementById('post_image');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const removeImageBtn = document.getElementById('removeImage');
+        const imageUploadSection = document.getElementById('imageUploadSection');
+        const imageCaption = document.getElementById('image_caption');
+        const submitBtn = document.getElementById('submitBtn');
+        const postForm = document.getElementById('postForm');
+
+        // Character counter
+        contentTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = length;
+            
+            // Update counter color
+            charCounter.className = 'char-counter';
+            if (length > 400) {
+                charCounter.classList.add('warning');
+            }
+            if (length > 480) {
+                charCounter.classList.add('error');
+            }
+            
+            updateSubmitButton();
+        });
+
+        // File input change
+        fileInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                
+                // Validate file type
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image must be smaller than 5MB.');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    imageCaption.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+            updateSubmitButton();
+        });
+
+        // Remove image
+        removeImageBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            imagePreview.style.display = 'none';
+            imageCaption.style.display = 'none';
+            imageCaption.value = '';
+            updateSubmitButton();
+        });
+
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            imageUploadSection.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            imageUploadSection.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            imageUploadSection.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            imageUploadSection.classList.add('dragover');
+        }
+
+        function unhighlight() {
+            imageUploadSection.classList.remove('dragover');
+        }
+
+        imageUploadSection.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+
+        // Click on upload section to trigger file input
+        imageUploadSection.addEventListener('click', function(e) {
+            if (e.target !== removeImageBtn && e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+
+        // Update submit button state
+        function updateSubmitButton() {
+            const hasContent = contentTextarea.value.trim().length > 0;
+            const hasImage = fileInput.files.length > 0;
+            submitBtn.disabled = !hasContent && !hasImage;
+        }
+
+        // Form submission handling
+        postForm.addEventListener('submit', function(e) {
+            const content = contentTextarea.value.trim();
+            const hasImage = fileInput.files.length > 0;
+            
+            if (!content && !hasImage) {
+                e.preventDefault();
+                alert('Please enter some content or select an image to post.');
+                return false;
+            }
+            
+            if (content.length > 500) {
+                e.preventDefault();
+                alert('Post content cannot exceed 500 characters.');
+                return false;
+            }
+            
+            // Show loading state
+            submitBtn.textContent = 'Posting...';
+            submitBtn.disabled = true;
+        });
+
+        // Auto-focus textarea
+        contentTextarea.focus();
+    </script>
 </body>
 </html>
