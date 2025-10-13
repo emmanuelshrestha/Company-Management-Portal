@@ -179,37 +179,32 @@ $sentRequestsStmt->close();
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .user-info-small {
             flex: 1;
         }
-        
+
         .user-name {
             font-weight: 600;
             color: #2d3748;
         }
-        
+
         .user-email {
             color: #718096;
             font-size: 14px;
         }
-        
+
         .request-date {
             color: #718096;
             font-size: 12px;
             margin-top: 5px;
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 10px;
         }
-        
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-        
+
         .search-form {
             background: white;
             padding: 20px;
@@ -217,21 +212,21 @@ $sentRequestsStmt->close();
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
+
         .search-input-group {
             display: flex;
             gap: 10px;
         }
-        
+
         .search-input-group input {
             flex: 1;
         }
-        
+
         .search-results {
             max-height: 400px;
             overflow-y: auto;
         }
-        
+
         .no-results {
             text-align: center;
             color: #718096;

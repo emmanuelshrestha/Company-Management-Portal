@@ -239,7 +239,7 @@ $debugStmt->close();
             max-width: 800px;
             margin: 0 auto;
         }
-        
+
         .post-card {
             background: white;
             border-radius: 12px;
@@ -249,12 +249,12 @@ $debugStmt->close();
             border: 1px solid #e2e8f0;
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        
+
         .post-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
-        
+
         .post-header {
             display: flex;
             justify-content: space-between;
@@ -263,13 +263,13 @@ $debugStmt->close();
             padding-bottom: 15px;
             border-bottom: 1px solid #f7fafc;
         }
-        
+
         .post-author {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
+
         .author-avatar {
             width: 40px;
             height: 40px;
@@ -282,24 +282,24 @@ $debugStmt->close();
             font-weight: bold;
             font-size: 16px;
         }
-        
+
         .author-info h3 {
             margin: 0;
             color: #2d3748;
             font-size: 16px;
         }
-        
+
         .author-info p {
             margin: 0;
             color: #718096;
             font-size: 14px;
         }
-        
+
         .post-date {
             color: #a0aec0;
             font-size: 14px;
         }
-        
+
         .post-content {
             color: #2d3748;
             line-height: 1.6;
@@ -307,66 +307,11 @@ $debugStmt->close();
             white-space: pre-wrap;
             word-wrap: break-word;
         }
-        
-        .post-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #f7fafc;
-        }
-        
-        .post-action {
-            background: none;
-            border: none;
-            color: #718096;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: color 0.2s;
-        }
-        
-        .post-action:hover {
-            color: #667eea;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #718096;
-        }
-        
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-        
-        .create-post-prompt {
-            background: #f0fff4;
-            border: 1px solid #9ae6b4;
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .debug-info {
-            background: #fffaf0;
-            border: 1px solid #fbd38d;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none; /* Hide by default, can be enabled for debugging */
-        }
-        
+
         .post-stats {
             display: flex;
             gap: 20px;
-            margin-bottom: 10px;
+            margin: 15px 0 10px;
             color: #718096;
             font-size: 14px;
         }
@@ -407,6 +352,63 @@ $debugStmt->close();
             font-size: 16px;
         }
 
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .create-post-prompt {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* Post Images - Facebook Style */
+        .post-image-full {
+            margin: 15px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .post-image-auto {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+
+        .post-image-full:hover .post-image-auto {
+            transform: scale(1.01);
+        }
+
+        .image-caption-full {
+            padding: 12px 16px;
+            color: #65676b;
+            font-size: 14px;
+            text-align: left;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+            line-height: 1.4;
+        }
+
+        .post-content:not(:empty) + .post-image-full {
+            margin-top: 12px;
+        }
+
+        /* Comments Section */
         .comments-section {
             margin-top: 20px;
             border-top: 1px solid #f7fafc;
@@ -488,34 +490,6 @@ $debugStmt->close();
             word-wrap: break-word;
         }
 
-        /* Post Images */
-        .post-image {
-            margin: 15px 0;
-            text-align: center;
-        }
-
-        .post-image img {
-            max-width: 100%;
-            max-height: 500px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .post-image img:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .image-caption {
-            margin-top: 10px;
-            color: #64748b;
-            font-size: 14px;
-            text-align: center;
-            font-style: italic;
-        }
-
         /* Image Modal */
         .image-modal {
             display: none;
@@ -583,143 +557,25 @@ $debugStmt->close();
             background: rgba(0,0,0,0.8);
         }
 
-        .modal-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-        }
-
-        .modal-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: background 0.3s;
-        }
-
-        .modal-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        /* Post Images - Facebook Style (Fully Visible) */
-        .post-image-full {
-            margin: 15px 0;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-
-        .post-image-auto {
-            width: 100%;
-            height: auto;
-            display: block;
-            max-height: none; /* Remove height restrictions */
-        }
-
-        .image-caption-full {
-            padding: 12px 16px;
-            color: #65676b;
-            font-size: 14px;
-            text-align: left;
-            border-top: 1px solid #e2e8f0;
-            background: white;
-            line-height: 1.4;
-        }
-
-        /* Text + Image combination */
-        .post-content:not(:empty) + .post-image-full {
-            margin-top: 12px;
-        }
-
-        /* Remove any hover effects that might suggest it's clickable */
-        .post-image-auto {
-            cursor: default;
-        }
-
-        .post-image-auto:hover {
-            transform: none;
-        }
-
-        /* Ensure proper spacing */
-        .post-stats {
-            margin-top: 15px;
-        }
-
-        .post-actions {
-            margin-top: 10px;
-        }
-
-        /* Remove the image actions section since we don't need "View Full Size" anymore */
-        .image-actions {
-            display: none;
-        }
-
-        /* For very large images, we can add a subtle max-width to maintain layout */
-        .post-image-auto {
-            max-width: 100%;
-            height: auto;
-        }
-
-        /* Keep the modal for those who might want to see details, but make it optional */
-        .post-image-full {
-            position: relative;
-        }
-
-        /* Optional: Add a subtle zoom on hover for better UX (like Facebook) */
-        .post-image-auto {
-            transition: transform 0.2s ease;
-        }
-
-        .post-image-full:hover .post-image-auto {
-            transform: scale(1.01);
-        }
-
-        /* Responsive adjustments */
         @media (max-width: 768px) {
+            .post-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .post-date {
+                align-self: flex-end;
+            }
+            
             .post-image-full {
                 margin: 12px 0;
                 border-radius: 8px;
-                border: 1px solid #e2e8f0;
             }
             
             .image-caption-full {
                 padding: 10px 12px;
                 font-size: 13px;
-            }
-        }
-
-        /* For landscape vs portrait images - maintain aspect ratio */
-        .post-image-auto {
-            object-fit: contain;
-        }
-
-        /* Remove any previous modal-related styles that might interfere */
-        .post-image-preview,
-        .image-action-btn {
-            display: none;
-        }
-
-        .image-loading {
-            background: #f7fafc;
-            border-radius: 12px;
-            min-height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #a0aec0;
-        }
-
-        /* Responsive images */
-        @media (max-width: 768px) {
-            .post-image img {
-                max-height: 300px;
             }
             
             .modal-content {
@@ -733,22 +589,6 @@ $debugStmt->close();
                 font-size: 30px;
                 width: 40px;
                 height: 40px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .post-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .post-date {
-                align-self: flex-end;
-            }
-            
-            .post-actions {
-                justify-content: space-around;
             }
         }
     </style>

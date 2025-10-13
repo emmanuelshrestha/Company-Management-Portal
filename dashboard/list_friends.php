@@ -137,7 +137,7 @@ $pendingSentStmt->close();
             gap: 20px;
             margin-top: 20px;
         }
-        
+
         .friend-card {
             background: white;
             border-radius: 12px;
@@ -145,20 +145,19 @@ $pendingSentStmt->close();
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             border: 1px solid #e2e8f0;
             transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
         }
-        
+
         .friend-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
-        
+
         .friend-header {
             display: flex;
             align-items: center;
             margin-bottom: 15px;
         }
-        
+
         .friend-avatar {
             width: 50px;
             height: 50px;
@@ -172,50 +171,50 @@ $pendingSentStmt->close();
             font-size: 18px;
             margin-right: 15px;
         }
-        
+
         .friend-info {
             flex: 1;
         }
-        
+
         .friend-name {
             font-weight: 600;
             color: #2d3748;
             font-size: 18px;
             margin-bottom: 5px;
         }
-        
+
         .friend-email {
             color: #718096;
             font-size: 14px;
         }
-        
+
         .friend-details {
             border-top: 1px solid #f7fafc;
             padding-top: 15px;
         }
-        
+
         .detail-item {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
             font-size: 14px;
         }
-        
+
         .detail-label {
             color: #718096;
         }
-        
+
         .detail-value {
             color: #2d3748;
             font-weight: 500;
         }
-        
+
         .friend-actions {
             margin-top: 15px;
             display: flex;
             gap: 10px;
         }
-        
+
         .btn-remove {
             background: #e53e3e;
             color: white;
@@ -227,23 +226,23 @@ $pendingSentStmt->close();
             transition: background 0.2s;
             flex: 1;
         }
-        
+
         .btn-remove:hover {
             background: #c53030;
         }
-        
+
         .empty-state {
             text-align: center;
             padding: 40px 20px;
             color: #718096;
         }
-        
+
         .empty-state-icon {
             font-size: 48px;
             margin-bottom: 15px;
             opacity: 0.5;
         }
-        
+
         .search-box {
             background: white;
             padding: 20px;
@@ -251,7 +250,7 @@ $pendingSentStmt->close();
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
+
         .search-input {
             width: 100%;
             padding: 12px 15px;
@@ -259,13 +258,13 @@ $pendingSentStmt->close();
             border-radius: 8px;
             font-size: 16px;
         }
-        
+
         .search-input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         .friends-count {
             background: #667eea;
             color: white;
@@ -275,7 +274,7 @@ $pendingSentStmt->close();
             font-weight: 600;
             margin-left: 10px;
         }
-        
+
         @media (max-width: 768px) {
             .friends-grid {
                 grid-template-columns: 1fr;
