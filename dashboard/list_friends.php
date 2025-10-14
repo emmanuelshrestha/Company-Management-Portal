@@ -131,49 +131,45 @@ $pendingSentStmt->close();
     <title>Friends List - <?php echo htmlspecialchars($user['name']); ?></title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .friends-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+        .friends-list {
             margin-top: 20px;
         }
 
-        .friend-card {
+        .friend-row {
             background: white;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             border: 1px solid #e2e8f0;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .friend-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .friend-header {
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
+            gap: 20px;
+        }
+
+        .friend-row:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         }
 
         .friend-avatar {
-            width: 50px;
-            height: 50px;
-            background: #667eea;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 18px;
-            margin-right: 15px;
+            font-size: 20px;
+            flex-shrink: 0;
         }
 
         .friend-info {
             flex: 1;
+            min-width: 0;
         }
 
         .friend-name {
@@ -186,60 +182,56 @@ $pendingSentStmt->close();
         .friend-email {
             color: #718096;
             font-size: 14px;
-        }
-
-        .friend-details {
-            border-top: 1px solid #f7fafc;
-            padding-top: 15px;
-        }
-
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 8px;
-            font-size: 14px;
         }
 
-        .detail-label {
-            color: #718096;
+        .friend-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #64748b;
         }
 
-        .detail-value {
-            color: #2d3748;
-            font-weight: 500;
+        .friend-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .friend-actions {
-            margin-top: 15px;
             display: flex;
             gap: 10px;
+            flex-shrink: 0;
         }
 
         .btn-remove {
             background: #e53e3e;
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
-            transition: background 0.2s;
-            flex: 1;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
         .btn-remove:hover {
             background: #c53030;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.2);
         }
 
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 60px 20px;
             color: #718096;
         }
 
         .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+            font-size: 64px;
+            margin-bottom: 20px;
             opacity: 0.5;
         }
 
@@ -247,16 +239,18 @@ $pendingSentStmt->close();
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
         }
 
         .search-input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 12px 16px;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 16px;
+            transition: all 0.3s;
         }
 
         .search-input:focus {
@@ -275,23 +269,46 @@ $pendingSentStmt->close();
             margin-left: 10px;
         }
 
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-verified {
+            background: #c6f6d5;
+            color: #276749;
+            border: 1px solid #9ae6b4;
+        }
+
         @media (max-width: 768px) {
-            .friends-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .friend-header {
+            .friend-row {
                 flex-direction: column;
                 text-align: center;
+                gap: 15px;
+                padding: 25px 20px;
             }
             
-            .friend-avatar {
-                margin-right: 0;
-                margin-bottom: 10px;
+            .friend-info {
+                width: 100%;
+            }
+            
+            .friend-meta {
+                justify-content: center;
+                flex-wrap: wrap;
             }
             
             .friend-actions {
-                flex-direction: column;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .btn-remove {
+                flex: 1;
+                max-width: 200px;
             }
         }
     </style>
@@ -376,46 +393,37 @@ $pendingSentStmt->close();
                     <a href="add_friend.php" class="action-btn" style="margin-top: 15px;">Add Your First Friend</a>
                 </div>
             <?php else: ?>
-                <div class="friends-grid" id="friendsContainer">
+                <div class="friends-list" id="friendsContainer">
                     <?php foreach ($friends as $friend): ?>
-                        <div class="friend-card" data-name="<?php echo htmlspecialchars(strtolower($friend['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($friend['email'])); ?>">
-                            <div class="friend-header">
-                                <div class="friend-avatar">
-                                    <?php echo strtoupper(substr($friend['name'], 0, 1)); ?>
-                                </div>
-                                <div class="friend-info">
-                                    <div class="friend-name"><?php echo htmlspecialchars($friend['name']); ?></div>
-                                    <div class="friend-email"><?php echo htmlspecialchars($friend['email']); ?></div>
-                                </div>
+                        <div class="friend-row" data-name="<?php echo htmlspecialchars(strtolower($friend['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($friend['email'])); ?>">
+                            <div class="friend-avatar">
+                                <?php echo strtoupper(substr($friend['name'], 0, 1)); ?>
                             </div>
                             
-                            <div class="friend-details">
-                                <div class="detail-item">
-                                    <span class="detail-label">Status:</span>
-                                    <span class="detail-value">
+                            <div class="friend-info">
+                                <div class="friend-name"><?php echo htmlspecialchars($friend['name']); ?></div>
+                                <div class="friend-email"><?php echo htmlspecialchars($friend['email']); ?></div>
+                                <div class="friend-meta">
+                                    <div class="friend-meta-item">
                                         <span class="status-badge status-verified">Verified</span>
-                                    </span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Friends Since:</span>
-                                    <span class="detail-value"><?php echo date('M j, Y', strtotime($friend['friends_since'])); ?></span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Member Since:</span>
-                                    <span class="detail-value"><?php echo date('M j, Y', strtotime($friend['user_joined'])); ?></span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Connection:</span>
-                                    <span class="detail-value"><?php echo htmlspecialchars($friend['request_direction']); ?></span>
+                                    </div>
+                                    <div class="friend-meta-item">
+                                        📅 Friends since <?php echo date('M j, Y', strtotime($friend['friends_since'])); ?>
+                                    </div>
+                                    <div class="friend-meta-item">
+                                        🤝 <?php echo htmlspecialchars($friend['request_direction']); ?>
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="friend-actions">
-                                <form method="POST" action="" style="flex: 1;">
+                                <form method="POST" action="">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                     <input type="hidden" name="remove_friend" value="1">
                                     <input type="hidden" name="friend_id" value="<?php echo $friend['id']; ?>">
-                                    <button type="submit" class="btn-remove" onclick="return confirm('Are you sure you want to remove <?php echo htmlspecialchars($friend['name']); ?> from your friends?')">Remove Friend</button>
+                                    <button type="submit" class="btn-remove" onclick="return confirm('Are you sure you want to remove <?php echo htmlspecialchars($friend['name']); ?> from your friends?')">
+                                        Remove Friend
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -423,7 +431,6 @@ $pendingSentStmt->close();
                 </div>
             <?php endif; ?>
         </div>
-    </div>
 
     <script src="js/list_friends.js"></script>
 </body>

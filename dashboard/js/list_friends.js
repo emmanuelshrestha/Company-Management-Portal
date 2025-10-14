@@ -1,16 +1,16 @@
 // Friend search functionality
 document.getElementById('friendSearch').addEventListener('input', function(e) {
     const searchTerm = e.target.value.toLowerCase();
-    const friendCards = document.querySelectorAll('.friend-card');
+    const friendRows = document.querySelectorAll('.friend-row');
     
-    friendCards.forEach(card => {
-        const name = card.getAttribute('data-name');
-        const email = card.getAttribute('data-email');
+    friendRows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        const email = row.getAttribute('data-email');
         
         if (name.includes(searchTerm) || email.includes(searchTerm)) {
-            card.style.display = 'block';
+            row.style.display = 'flex';
         } else {
-            card.style.display = 'none';
+            row.style.display = 'none';
         }
     });
 });
