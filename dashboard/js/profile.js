@@ -1,26 +1,24 @@
 // Tab switching functionality
 function switchTab(tabName) {
-    // Hide all tab contents
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
+    // Hide all tab contents and remove active class from buttons
+    document.querySelectorAll('.tab-content, .tab-btn').forEach(element => {
+        element.classList.remove('active');
     });
     
-    // Remove active class from all tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show selected tab content
+    // Show selected tab and activate button
     document.getElementById(tabName).classList.add('active');
-    
-    // Add active class to clicked tab button
     event.target.classList.add('active');
 }
 
 // Form validation
-document.querySelector('form').addEventListener('submit', function(e) {
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+function validateProfileForm(e) {
+    const name = document.getElementById('name')?.value.trim();
+    const email = document.getElementById('email')?.value.trim();
     
     if (!name || !email) {
         e.preventDefault();
@@ -33,33 +31,81 @@ document.querySelector('form').addEventListener('submit', function(e) {
         alert('Please enter a valid email address.');
         return false;
     }
-});
-
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
 }
 
-// Preview image before upload
-document.getElementById('profile_picture')?.addEventListener('change', function(e) {
-    const file = this.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.querySelector('.profile-avatar').style.backgroundImage = `url(${e.target.result})`;
-            document.querySelector('.profile-avatar').innerHTML = '';
+// Image preview handlers
+function setupImagePreview(inputId, targetElement) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    input.addEventListener('change', function(e) {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                targetElement.style.backgroundImage = `url(${e.target.result})`;
+                if (inputId === 'profile_picture') {
+                    targetElement.innerHTML = '';
+                }
+            }
+            reader.readAsDataURL(file);
         }
-        reader.readAsDataURL(file);
-    }
-});
+    });
+}
 
-document.getElementById('cover_photo')?.addEventListener('change', function(e) {
-    const file = this.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.querySelector('.cover-photo').style.backgroundImage = `url(${e.target.result})`;
-        }
-        reader.readAsDataURL(file);
+// Image Modal Functions
+function openImageModal(img, caption) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const captionText = document.getElementById('modalCaption');
+    
+    modal.style.display = 'block';
+    modalImg.src = img.src;
+    captionText.innerHTML = caption || '';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Auto-dismiss messages
+function autoDismissMessages() {
+    setTimeout(() => {
+        document.querySelectorAll('.message').forEach(msg => {
+            msg.style.opacity = '0';
+            msg.style.transition = 'opacity 0.5s';
+            setTimeout(() => msg.remove(), 500);
+        });
+    }, 5000);
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', validateProfileForm);
     }
+    
+    // Image previews
+    setupImagePreview('profile_picture', document.querySelector('.profile-avatar'));
+    setupImagePreview('cover_photo', document.querySelector('.cover-photo'));
+    
+    // Modal events
+    const imageModal = document.getElementById('imageModal');
+    if (imageModal) {
+        imageModal.addEventListener('click', function(e) {
+            if (e.target === this) closeImageModal();
+        });
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeImageModal();
+    });
+    
+    // Auto-dismiss messages
+    autoDismissMessages();
 });
