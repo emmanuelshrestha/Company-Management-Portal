@@ -16,7 +16,7 @@ if (empty($_SESSION['csrf_token'])) {
 
 // Fetch user details
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT name, email, status, created_at FROM users WHERE id = ?";
+$sql = "SELECT name, email, status, created_at, profile_picture FROM users WHERE id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -31,7 +31,7 @@ if ($result->num_rows === 0) {
 $stmt->close();
 
 // Fetch pending friend requests
-$pendingSql = "SELECT u.id, u.name FROM friends f JOIN users u ON f.user_id = u.id WHERE f.friend_id = ? AND f.status = 'pending'";
+$pendingSql = "SELECT u.id, u.name, u.profile_picture FROM friends f JOIN users u ON f.user_id = u.id WHERE f.friend_id = ? AND f.status = 'pending'";
 $pendingStmt = $conn->prepare($pendingSql);
 $pendingStmt->bind_param("i", $user_id);
 $pendingStmt->execute();
@@ -87,6 +87,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Welcome <?php echo htmlspecialchars($user['name'] ?? 'User'); ?></title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .pending-requests-list {
+            margin-top: 15px;
+        }
+
+        .pending-request-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .request-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .request-info {
+            flex: 1;
+        }
+
+        .request-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .request-status {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .request-actions {
+            margin: 0;
+        }
+
+        .accept-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .accept-btn:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+
+        /* Ensure avatar images display properly */
+        .user-avatar-small[style*="background-image"] {
+            color: transparent !important;
+            background-size: cover !important;
+            background-position: center !important;
+        }
+    </style>
 </head>
 <body class="dashboard-page">
     <div class="container">
@@ -97,9 +178,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Here's your account overview and quick actions</p>
             </div>
             <div class="user-info">
-                <div class="user-avatar">
-                    <?php echo strtoupper(substr($user['name'] ?? 'U', 0, 1)); ?>
-                </div>
+                <?php 
+                if (!empty($user['profile_picture'])) {
+                    echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                } else {
+                    echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+                }
+                ?>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </div>
         </div>
@@ -154,19 +239,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (empty($pendingRequests)): ?>
                 <p>No pending friend requests.</p>
             <?php else: ?>
-                <ul>
+                <div class="pending-requests-list">
                     <?php foreach ($pendingRequests as $request): ?>
-                        <li>
-                            <?php echo htmlspecialchars($request['name']); ?>
-                            <form method="POST" style="display:inline;">
+                        <div class="pending-request-item">
+                            <div class="request-user">
+                                <?php 
+                                if (!empty($request['profile_picture'])) {
+                                    echo '<div class="user-avatar-small" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($request['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                                } else {
+                                    echo '<div class="user-avatar-small">' . strtoupper(substr($request['name'], 0, 1)) . '</div>';
+                                }
+                                ?>
+                                <div class="request-info">
+                                    <div class="request-name"><?php echo htmlspecialchars($request['name']); ?></div>
+                                    <div class="request-status">Sent you a friend request</div>
+                                </div>
+                            </div>
+                            <form method="POST" class="request-actions">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                 <input type="hidden" name="action" value="accept">
                                 <input type="hidden" name="friend_id" value="<?php echo $request['id']; ?>">
-                                <button type="submit">Accept</button>
+                                <button type="submit" class="accept-btn">Accept</button>
                             </form>
-                        </li>
+                        </div>
                     <?php endforeach; ?>
-                </ul>
+                </div>
             <?php endif; ?>
         </div>
 

@@ -21,7 +21,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // Fetch user details for header
-$userSql = "SELECT name FROM users WHERE id = ?";
+$userSql = "SELECT name, profile_picture FROM users WHERE id = ?";
 $userStmt = $conn->prepare($userSql);
 $userStmt->bind_param("i", $_SESSION['user_id']);
 $userStmt->execute();
@@ -48,12 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         case 'load_comments':
             $post_id = filter_var($_POST['post_id'] ?? 0, FILTER_VALIDATE_INT);
             if ($post_id) {
-                $commentsSql = "SELECT pc.*, u.name 
-                            FROM post_comments pc 
-                            JOIN users u ON pc.user_id = u.id 
-                            WHERE pc.post_id = ? 
-                            ORDER BY pc.created_at ASC 
-                            LIMIT 50";
+                $commentsSql = "SELECT pc.*, u.name, u.profile_picture 
+                                FROM post_comments pc 
+                                JOIN users u ON pc.user_id = u.id 
+                                WHERE pc.post_id = ? 
+                                ORDER BY pc.created_at ASC 
+                                LIMIT 50";
                 $commentsStmt = $conn->prepare($commentsSql);
                 $commentsStmt->bind_param("i", $post_id);
                 $commentsStmt->execute();
@@ -157,19 +157,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // Fetch posts from user and their friends
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT DISTINCT p.id, p.content, p.created_at, p.image_filename, p.image_caption, u.name, u.id as user_id
-        FROM posts p 
-        JOIN users u ON p.user_id = u.id 
-        WHERE p.user_id = ? 
+$sql = "SELECT DISTINCT p.id, p.content, p.created_at, p.image_filename, p.image_caption, u.name, u.id as user_id, u.profile_picture
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = ?
            OR p.user_id IN (
                SELECT friend_id FROM friends WHERE user_id = ? AND status = 'approved'
                UNION
                SELECT user_id FROM friends WHERE friend_id = ? AND status = 'approved'
            )
-        ORDER BY p.created_at DESC 
+        ORDER BY p.created_at DESC
         LIMIT 50";
 
 $stmt = $conn->prepare($sql);
+if (!$stmt) {
+    // helpful debug if prepare fails
+    file_put_contents('debug.log', "[" . date('Y-m-d H:i:s') . "] Prepare failed: " . $conn->error . "\n", FILE_APPEND);
+    die("Database error.");
+}
 $stmt->bind_param("iii", $user_id, $user_id, $user_id);
 $stmt->execute();
 $posts_result = $stmt->get_result();
@@ -603,9 +608,13 @@ $debugStmt->close();
                 <p>Latest posts from you and your friends</p>
             </div>
             <div class="user-info">
-                <div class="user-avatar">
-                    <?php echo strtoupper(substr($user['name'] ?? 'U', 0, 1)); ?>
-                </div>
+            <?php 
+            if (!empty($user['profile_picture'])) {
+                echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . ');"></div>';
+            } else {
+                echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+            }
+            ?>
                 <a href="create_post.php" class="action-btn">Create Post</a>
                 <a href="dashboard.php" class="action-btn secondary">Dashboard</a>
                 <a href="logout.php" class="logout-btn">Logout</a>
@@ -666,9 +675,13 @@ $debugStmt->close();
                         <div class="post-card">
                             <div class="post-header">
                                 <div class="post-author">
-                                    <div class="author-avatar">
-                                        <?php echo strtoupper(substr($post['name'], 0, 1)); ?>
-                                    </div>
+                                    <?php 
+                                    if (!empty($post['profile_picture'])) {
+                                        echo '<div class="author-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($post['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                                    } else {
+                                        echo '<div class="author-avatar">' . strtoupper(substr($post['name'], 0, 1)) . '</div>';
+                                    }
+                                    ?>
                                     <div class="author-info">
                                         <h3><?php echo htmlspecialchars($post['name']); ?></h3>
                                         <p>

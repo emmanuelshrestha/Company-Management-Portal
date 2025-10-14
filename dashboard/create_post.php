@@ -14,7 +14,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // Fetch user details for header
-$userSql = "SELECT name FROM users WHERE id = ?";
+$userSql = "SELECT name, profile_picture FROM users WHERE id = ?";
 $userStmt = $conn->prepare($userSql);
 $userStmt->bind_param("i", $_SESSION['user_id']);
 $userStmt->execute();
@@ -421,9 +421,13 @@ function handleImageUpload($file) {
                 <p>Share your thoughts and images with your friends</p>
             </div>
             <div class="user-info">
-                <div class="user-avatar">
-                    <?php echo strtoupper(substr($user['name'] ?? 'U', 0, 1)); ?>
-                </div>
+            <?php 
+            if (!empty($user['profile_picture'])) {
+                echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . ');"></div>';
+            } else {
+                echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+            }
+            ?>
                 <a href="dashboard.php" class="action-btn secondary">Back to Dashboard</a>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </div>
@@ -453,9 +457,13 @@ function handleImageUpload($file) {
             <!-- Create Post Form -->
             <div class="post-form-card">
                 <div class="post-header">
-                    <div class="user-avatar-small">
-                        <?php echo strtoupper(substr($user['name'] ?? 'U', 0, 1)); ?>
-                    </div>
+                <?php 
+                if (!empty($user['profile_picture'])) {
+                    echo '<div class="user-avatar-small" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . ');"></div>';
+                } else {
+                    echo '<div class="user-avatar-small">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+                }
+                ?>
                     <div class="user-info-small">
                         <h3><?php echo htmlspecialchars($user['name']); ?></h3>
                         <p>Posting to your news feed</p>

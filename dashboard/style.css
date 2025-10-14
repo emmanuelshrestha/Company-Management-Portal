@@ -419,6 +419,76 @@ button:hover {
     }
 }
 
+
+.user-avatar, .author-avatar, .friend-avatar, .user-avatar-small {
+    background-size: cover !important;
+    background-position: center !important;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide text when background image is present */
+.user-avatar[style*="background-image"],
+.author-avatar[style*="background-image"], 
+.friend-avatar[style*="background-image"],
+.user-avatar-small[style*="background-image"] {
+    color: transparent !important;
+}
+
+/* Specific avatar sizes */
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.user-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    background: #667eea;
+}
+
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    background: #667eea;
+}
+
+.friend-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+
 @media (max-width: 480px) {
     .container {
         padding: 15px;

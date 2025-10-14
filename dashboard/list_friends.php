@@ -18,7 +18,7 @@ $message = "";
 $msgClass = "";
 
 // Fetch user details for display
-$userSql = "SELECT name FROM users WHERE id = ?";
+$userSql = "SELECT name, profile_picture FROM users WHERE id = ?";
 $userStmt = $conn->prepare($userSql);
 $userStmt->bind_param("i", $user_id);
 $userStmt->execute();
@@ -79,6 +79,7 @@ $friendsSql = "SELECT
     u.id,
     u.name,
     u.email,
+    u.profile_picture,
     u.status as user_status,
     u.created_at as user_joined,
     CASE 
@@ -322,9 +323,13 @@ $pendingSentStmt->close();
                 <p>Manage your friends list and connections</p>
             </div>
             <div class="user-info">
-                <div class="user-avatar">
-                    <?php echo strtoupper(substr($user['name'] ?? 'U', 0, 1)); ?>
-                </div>
+                <?php 
+                if (!empty($user['profile_picture'])) {
+                    echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . ');"></div>';
+                } else {
+                    echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+                }
+                ?>
                 <a href="dashboard.php" class="action-btn secondary">Back to Dashboard</a>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </div>
@@ -396,9 +401,13 @@ $pendingSentStmt->close();
                 <div class="friends-list" id="friendsContainer">
                     <?php foreach ($friends as $friend): ?>
                         <div class="friend-row" data-name="<?php echo htmlspecialchars(strtolower($friend['name'])); ?>" data-email="<?php echo htmlspecialchars(strtolower($friend['email'])); ?>">
-                            <div class="friend-avatar">
-                                <?php echo strtoupper(substr($friend['name'], 0, 1)); ?>
-                            </div>
+                        <?php 
+                        if (!empty($friend['profile_picture'])) {
+                            echo '<div class="friend-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($friend['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                        } else {
+                            echo '<div class="friend-avatar">' . strtoupper(substr($friend['name'], 0, 1)) . '</div>';
+                        }
+                        ?>
                             
                             <div class="friend-info">
                                 <div class="friend-name"><?php echo htmlspecialchars($friend['name']); ?></div>

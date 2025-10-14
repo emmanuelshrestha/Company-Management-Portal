@@ -18,7 +18,7 @@ $message = "";
 $msgClass = "";
 
 // Fetch user details for display
-$userSql = "SELECT name FROM users WHERE id = ?";
+$userSql = "SELECT name, profile_picture FROM users WHERE id = ?";
 $userStmt = $conn->prepare($userSql);
 $userStmt->bind_param("i", $user_id);
 $userStmt->execute();
@@ -42,11 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['search_users'])) {
             $msgClass = "msg-error";
         } else {
             $search_term = "%$search_query%";
-            $searchSql = "SELECT id, name, email, status FROM users 
-                         WHERE (name LIKE ? OR email LIKE ?) 
-                         AND id != ? 
-                         AND status = 'Verified'
-                         ORDER BY name LIMIT 20";
+            $searchSql = "SELECT id, name, email, profile_picture, status FROM users 
+                        WHERE (name LIKE ? OR email LIKE ?) 
+                        AND id != ? 
+                        AND status = 'Verified'
+                        ORDER BY name LIMIT 20";
             $searchStmt = $conn->prepare($searchSql);
             $searchStmt->bind_param("ssi", $search_term, $search_term, $user_id);
             $searchStmt->execute();
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_request'])) {
 }
 
 // Fetch pending sent requests
-$sentRequestsSql = "SELECT f.friend_id, u.name, u.email, f.created_at 
+$sentRequestsSql = "SELECT f.friend_id, u.name, u.email, u.profile_picture, f.created_at 
                    FROM friends f 
                    JOIN users u ON f.friend_id = u.id 
                    WHERE f.user_id = ? AND f.status = 'pending' 
@@ -232,6 +232,74 @@ $sentRequestsStmt->close();
             color: #718096;
             padding: 20px;
         }
+
+        .user-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            flex-shrink: 0;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info-small {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .user-email {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .request-date {
+            color: #718096;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        /* Ensure avatar images display properly */
+        .user-avatar-small[style*="background-image"] {
+            color: transparent !important;
+            background-size: cover !important;
+            background-position: center !important;
+        }
+
+        /* Update existing user-avatar in header */
+        .user-avatar[style*="background-image"] {
+            color: transparent !important;
+            background-size: cover !important;
+            background-position: center !important;
+        }
     </style>
 </head>
 <body class="dashboard-page">
@@ -243,9 +311,13 @@ $sentRequestsStmt->close();
                 <p>Search for users and connect with friends</p>
             </div>
             <div class="user-info">
-                <div class="user-avatar">
-                    <?php echo strtoupper(substr($user['name'] ?? 'U', 0, 1)); ?>
-                </div>
+                <?php 
+                if (!empty($user['profile_picture'])) {
+                    echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                } else {
+                    echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+                }
+                ?>
                 <a href="dashboard.php" class="action-btn secondary">Back to Dashboard</a>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </div>
@@ -291,6 +363,15 @@ $sentRequestsStmt->close();
                 <div class="search-results">
                     <?php foreach ($search_results as $result): ?>
                         <div class="user-card">
+                            <div class="user-avatar-small">
+                                <?php 
+                                if (!empty($result['profile_picture'])) {
+                                    echo '<div class="user-avatar-small" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($result['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                                } else {
+                                    echo '<div class="user-avatar-small">' . strtoupper(substr($result['name'], 0, 1)) . '</div>';
+                                }
+                                ?>
+                            </div>
                             <div class="user-info-small">
                                 <div class="user-name"><?php echo htmlspecialchars($result['name']); ?></div>
                                 <div class="user-email"><?php echo htmlspecialchars($result['email']); ?></div>
@@ -325,16 +406,25 @@ $sentRequestsStmt->close();
             <?php else: ?>
                 <div class="search-results">
                     <?php foreach ($sent_requests as $request): ?>
-                        <div class="user-card">
-                            <div class="user-info-small">
-                                <div class="user-name"><?php echo htmlspecialchars($request['name']); ?></div>
-                                <div class="user-email"><?php echo htmlspecialchars($request['email']); ?></div>
-                                <div class="request-date">Sent: <?php echo date('M j, Y g:i A', strtotime($request['created_at'])); ?></div>
-                            </div>
-                            <div class="action-buttons">
-                                <span style="color: #ed8936; font-weight: 500;">Pending</span>
-                            </div>
+                    <div class="user-card">
+                        <div class="user-avatar-small">
+                            <?php 
+                            if (!empty($request['profile_picture'])) {
+                                echo '<div class="user-avatar-small" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($request['profile_picture']) . '); background-size: cover; background-position: center;"></div>';
+                            } else {
+                                echo '<div class="user-avatar-small">' . strtoupper(substr($request['name'], 0, 1)) . '</div>';
+                            }
+                            ?>
                         </div>
+                        <div class="user-info-small">
+                            <div class="user-name"><?php echo htmlspecialchars($request['name']); ?></div>
+                            <div class="user-email"><?php echo htmlspecialchars($request['email']); ?></div>
+                            <div class="request-date">Sent: <?php echo date('M j, Y g:i A', strtotime($request['created_at'])); ?></div>
+                        </div>
+                        <div class="action-buttons">
+                            <span style="color: #ed8936; font-weight: 500;">Pending</span>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
