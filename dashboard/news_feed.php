@@ -311,6 +311,7 @@ $debugStmt->close();
             font-size: 16px;
             white-space: pre-wrap;
             word-wrap: break-word;
+            text-align: left; /* ADD THIS */
         }
 
         .post-stats {

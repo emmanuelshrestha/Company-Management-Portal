@@ -513,6 +513,7 @@ function handleImageUpload($file, $type) {
             line-height: 1.6;
             margin-bottom: 15px;
             white-space: pre-wrap;
+            text-align: left;
         }
 
         .post-stats {

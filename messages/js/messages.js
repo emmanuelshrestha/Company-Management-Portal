@@ -261,11 +261,6 @@ class MessageManager {
                     messageInput.style.height = 'auto';
                 }
                 
-                // Add message to chat INSTANTLY
-                if (data.message) {
-                    this.addMessageToChat(data.message);
-                }
-                
                 // Refresh conversations list
                 await this.loadConversations();
             } else {
