@@ -8,12 +8,6 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Generate CSRF token if not set
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    error_log("New CSRF Token generated: " . $_SESSION['csrf_token'], 3, __DIR__ . '/../../logs/csrf_debug.log');
-}
-
 // Fetch user details
 $user_id = $_SESSION['user_id'];
 $sql = "SELECT name, email, status, created_at, profile_picture FROM users WHERE id = ?";
