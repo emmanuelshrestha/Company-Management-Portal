@@ -88,6 +88,14 @@ class MessageManager {
             }
 
             this.conversationsData = data.conversations || [];
+            
+            // SORT by last_message_time (most recent first)
+            this.conversationsData.sort((a, b) => {
+                const timeA = a.last_message_time ? new Date(a.last_message_time).getTime() : 0;
+                const timeB = b.last_message_time ? new Date(b.last_message_time).getTime() : 0;
+                return timeB - timeA; // Descending (newest first)
+            });
+            
             this.renderConversations(this.conversationsData);
         } catch (error) {
             console.error('Load conversations error:', error);
