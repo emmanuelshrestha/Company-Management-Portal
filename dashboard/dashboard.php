@@ -296,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Quick Actions -->
             <div class="quick-actions">
                 <a href="edit-profile.php" class="action-btn">Edit Profile</a>
-                <a href="change-password.php" class="action-btn secondary">Change Password</a>
+                <a href="../modules/user/change_password.php" class="action-btn secondary">Change Password</a>
                 <?php if ($user && $user['status'] !== 'Verified'): ?>
                     <a href="resend-verification.php" class="action-btn secondary">Resend Verification Email</a>
                 <?php endif; ?>

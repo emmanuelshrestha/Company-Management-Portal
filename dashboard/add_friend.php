@@ -5,7 +5,7 @@ require __DIR__ . '/../config/db.php';
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
-    exit;
+    exit; 
 }
 
 // Generate CSRF token if not set
@@ -178,70 +178,6 @@ $sentRequestsStmt->close();
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .user-info-small {
-            flex: 1;
-        }
-
-        .user-name {
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .user-email {
-            color: #718096;
-            font-size: 14px;
-        }
-
-        .request-date {
-            color: #718096;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-form {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .search-input-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-input-group input {
-            flex: 1;
-        }
-
-        .search-results {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .no-results {
-            text-align: center;
-            color: #718096;
-            padding: 20px;
-        }
-
-        .user-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             gap: 15px;
         }
 
@@ -283,22 +219,86 @@ $sentRequestsStmt->close();
 
         .action-buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-shrink: 0;
+            align-items: center;
+        }
+
+        .action-btn.btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .action-btn.secondary.btn-small {
+            background: white;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .action-btn.secondary.btn-small:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+
+        .search-form {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input-group input {
+            flex: 1;
+        }
+
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #718096;
+            padding: 20px;
         }
 
         /* Ensure avatar images display properly */
-        .user-avatar-small[style*="background-image"] {
-            color: transparent !important;
-            background-size: cover !important;
-            background-position: center !important;
-        }
-
-        /* Update existing user-avatar in header */
+        .user-avatar-small[style*="background-image"],
         .user-avatar[style*="background-image"] {
             color: transparent !important;
             background-size: cover !important;
             background-position: center !important;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .user-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .action-buttons .action-btn {
+                flex: 1;
+                max-width: 120px;
+                min-width: 100px;
+            }
         }
     </style>
 </head>
@@ -378,6 +378,9 @@ $sentRequestsStmt->close();
                                 <div class="request-date">Status: <?php echo htmlspecialchars($result['status']); ?></div>
                             </div>
                             <div class="action-buttons">
+                                <a href="public_profile.php?id=<?php echo $result['id']; ?>" class="action-btn secondary btn-small" style="padding: 8px 12px; font-size: 12px;">
+                                    View Profile
+                                </a>
                                 <form method="POST" action="" style="display: inline;">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                     <input type="hidden" name="send_request" value="1">
@@ -422,7 +425,10 @@ $sentRequestsStmt->close();
                             <div class="request-date">Sent: <?php echo date('M j, Y g:i A', strtotime($request['created_at'])); ?></div>
                         </div>
                         <div class="action-buttons">
-                            <span style="color: #ed8936; font-weight: 500;">Pending</span>
+                            <a href="friend_profile.php?id=<?php echo $request['friend_id']; ?>" class="action-btn secondary btn-small" style="padding: 8px 12px; font-size: 12px;">
+                                View Profile
+                            </a>
+                            <span style="color: #ed8936; font-weight: 500; padding: 8px 12px;">Pending</span>
                         </div>
                     </div>
                     <?php endforeach; ?>

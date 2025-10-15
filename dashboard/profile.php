@@ -894,7 +894,7 @@ function handleImageUpload($file, $type) {
 
                     <div class="quick-actions" style="margin-top: 30px;">
                         <button type="submit" class="action-btn">Update Profile</button>
-                        <a href="change-password.php" class="action-btn secondary">Change Password</a>
+                        <a href="../modules/user/change_password.php" class="action-btn secondary">Change Password</a>
                     </div>
                 </form>
             </div>
