@@ -435,12 +435,13 @@ function handleImageUpload($file) {
 
         <!-- Navigation -->
         <div class="nav-links">
-            <a href="../index.php">Home</a> | 
             <a href="dashboard.php">Dashboard</a> | 
             <a href="profile.php">Profile</a> | 
             <a href="add_friend.php">Add Friends</a> | 
-            <a href="list_friends.php">Friends List</a> |
-            <a href="news_feed.php">News Feed</a>
+            <a href="list_friends.php">Friends List</a> | 
+            <a href="create_post.php">Create Post</a> | 
+            <a href="news_feed.php">News Feed</a> | 
+            <a href="../messages/messages.php">Messages</a>
         </div>
 
         <!-- Messages -->

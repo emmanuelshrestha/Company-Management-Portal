@@ -374,7 +374,7 @@ $pendingSentStmt->close();
             <a href="list_friends.php">Friends List</a> | 
             <a href="create_post.php">Create Post</a> | 
             <a href="news_feed.php">News Feed</a> | 
-            <a href="logout.php">Logout</a>
+            <a href="../messages/messages.php">Messages</a>
         </div>
 
         <!-- Messages -->
@@ -457,7 +457,10 @@ $pendingSentStmt->close();
                             </div>
                             
                             <div class="friend-actions">
-                                <a href="friend_profile.php?id=<?php echo $friend['id']; ?>" class="action-btn" style="padding: 8px 16px; font-size: 12px; white-space: nowrap;">
+                                <a href="../messages/messages.php?friend_id=<?php echo $friend['id']; ?>" class="action-btn" style="padding: 8px 12px; font-size: 12px;">
+                                    💬 Message
+                                </a>
+                                <a href="friend_profile.php?id=<?php echo $friend['id']; ?>" class="action-btn secondary btn-small">
                                     View Profile
                                 </a>
                                 <form method="POST" action="" style="display: inline;">

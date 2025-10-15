@@ -629,7 +629,7 @@ $debugStmt->close();
             <a href="list_friends.php">Friends List</a> | 
             <a href="create_post.php">Create Post</a> | 
             <a href="news_feed.php">News Feed</a> | 
-            <a href="logout.php">Logout</a>
+            <a href="../messages/messages.php">Messages</a>
         </div>
 
         <!-- Debug Info (Enable for testing) -->
