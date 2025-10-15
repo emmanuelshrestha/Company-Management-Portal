@@ -125,8 +125,8 @@ class MessageManager {
 
             return `
                 <div class="conversation-item ${activeClass}" 
-                     data-friend-id="${conv.friend_id}" 
-                     data-conversation-id="${conv.conversation_id || ''}">
+                    data-friend-id="${conv.friend_id}" 
+                    data-conversation-id="${conv.conversation_id || ''}">
                     <div class="conversation-avatar" style="${avatarStyle}">${avatarContent}</div>
                     <div class="conversation-info">
                         <div class="conversation-name">${this.escapeHtml(conv.friend_name)}</div>
@@ -138,24 +138,35 @@ class MessageManager {
             `;
         }).join('');
 
-        // Attach click listeners to conversation items
-        container.querySelectorAll('.conversation-item').forEach(item => {
-            // Remove existing handlers to avoid duplicates
-            item.replaceWith(item.cloneNode(true));
-        });
-
-        // Re-query after cloning
-        container.querySelectorAll('.conversation-item').forEach(item => {
-            item.addEventListener('click', (ev) => {
-                const el = ev.currentTarget;
-                const friendId = el.getAttribute('data-friend-id');
-                const conversationId = el.getAttribute('data-conversation-id') || null;
-                this.openConversation(friendId, conversationId, el);
-            });
+        // SIMPLIFIED CLICK HANDLER - This should fix the issue
+        container.addEventListener('click', (event) => {
+            const conversationItem = event.target.closest('.conversation-item');
+            if (conversationItem) {
+                const friendId = conversationItem.getAttribute('data-friend-id');
+                const conversationId = conversationItem.getAttribute('data-conversation-id') || null;
+                console.log('🎯 Conversation clicked:', friendId, conversationId);
+                this.openConversation(friendId, conversationId, conversationItem);
+            }
         });
     }
 
     async loadMessages(conversationId) {
+        console.log('🚀 loadMessages called for conversation:', conversationId);
+
+        // FIX: Ensure chat area is visible
+        const chatArea = document.querySelector('.chat-area');
+        const messagesArea = document.getElementById('messagesArea');
+        
+        if (chatArea) {
+            chatArea.style.display = 'flex';
+            console.log('✅ Made chat area visible');
+        }
+        
+        if (!messagesArea) {
+            console.error('❌ messagesArea still not found after making chat area visible');
+            return;
+        }
+
         if (this.isLoading) return;
         this.isLoading = true;
 
@@ -274,13 +285,14 @@ class MessageManager {
 
     // openConversation optionally accepts the clicked element to manage UI state
     async openConversation(friendId, conversationId = null, clickedElement = null) {
-        // Wait for chat area to be ready
-        if (!document.getElementById('messagesArea')) {
-            console.log('⏳ Waiting for chat area to be ready...');
-            setTimeout(() => {
-                this.openConversation(friendId, conversationId, clickedElement);
-            }, 300);
-            return;
+        console.log('🔍 openConversation called with:', { friendId, conversationId, clickedElement });
+
+        // FIX: Check if we're on mobile and need to show chat area
+        if (window.innerWidth <= 768) {
+            const sidebar = document.querySelector('.conversations-sidebar');
+            const chatArea = document.querySelector('.chat-area');
+            if (sidebar) sidebar.style.display = 'none';
+            if (chatArea) chatArea.style.display = 'flex';
         }
 
         // Remove active from all
@@ -305,9 +317,10 @@ class MessageManager {
 
         try {
             let finalConversationId = conversationId;
+            console.log('🔄 Getting conversation ID...');
 
             if (!finalConversationId) {
-                // Create conversation if it doesn't exist
+                console.log('📝 Creating new conversation...');
                 const response = await fetch('create_conversation.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -315,25 +328,42 @@ class MessageManager {
                 });
 
                 const data = await response.json();
+                console.log('📨 create_conversation.php response:', data);
+                
                 if (data.error) throw new Error(data.error);
                 finalConversationId = data.conversation_id;
             }
 
-            // Update URL without reload - BUT don't interfere with current flow
+            console.log('🎯 Final conversation ID:', finalConversationId);
+
+            // Update URL without reload
             const url = new URL(window.location);
             url.searchParams.set('friend_id', friendId);
-            window.history.replaceState({}, '', url); // Use replaceState instead of pushState
+            window.history.replaceState({}, '', url);
 
             this.currentConversationId = finalConversationId;
             const convIdInput = document.getElementById('conversationId');
             if (convIdInput) convIdInput.value = finalConversationId;
 
-            // Update UI header and messages
-            this.updateChatHeader(friendId);
-            await this.loadMessages(finalConversationId);
+            // Create chat area dynamically
+            console.log('👤 Creating chat area...');
+            const chatCreated = this.createChatArea(friendId, finalConversationId);
+
+            if (chatCreated) {
+                console.log('👤 Updating chat header...');
+                await this.updateChatHeader(friendId);
+                
+                console.log('📨 Loading messages...');
+                await this.loadMessages(finalConversationId);
+            } else {
+                console.error('❌ Failed to create chat area');
+            }
+            
+            console.log('🔄 Starting polling...');
             this.startPolling();
+            
         } catch (error) {
-            console.error('Error opening conversation:', error);
+            console.error('❌ Error opening conversation:', error);
             if (clickedElement) clickedElement.classList.remove('active');
         } finally {
             if (clickedElement) clickedElement.style.opacity = '1';
@@ -466,6 +496,62 @@ class MessageManager {
 
         container.appendChild(messageElement);
         this.scrollToBottom();
+    }
+
+    createChatArea(friendId, conversationId) {
+        console.log('🏗️ Creating chat area dynamically...');
+        
+        const chatArea = document.querySelector('.chat-area');
+        if (!chatArea) {
+            console.error('❌ Chat area container not found');
+            return false;
+        }
+        
+        // Create the chat area HTML structure
+        chatArea.innerHTML = `
+            <div class="chat-header">
+                <div class="chat-header-avatar" id="dynamicChatAvatar">
+                    <!-- Avatar will be filled by updateChatHeader -->
+                </div>
+                <div class="chat-header-info">
+                    <h3 id="dynamicChatName">Loading...</h3>
+                    <p>● Online</p>
+                </div>
+            </div>
+
+            <div class="messages-area" id="messagesArea">
+                <div id="debugInfo" style="display: none; background: #ffebee; padding: 10px; margin: 10px; border-radius: 5px;">
+                    Debug: Conversation ID: <span id="debugConvId"></span><br>
+                    Status: <span id="debugStatus">Loading...</span>
+                </div>
+                <!-- Messages will be loaded via JavaScript -->
+            </div>
+
+            <div class="message-input-area">
+                <form class="message-input-form" id="messageForm">
+                    <input type="hidden" id="conversationId" value="${conversationId}">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                    <textarea 
+                        class="message-input" 
+                        id="messageInput" 
+                        placeholder="Type a message..." 
+                        rows="1"
+                    ></textarea>
+                    <button type="submit" class="send-button" id="sendButton">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22,2 15,22 11,13 2,9"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        `;
+    
+        // Re-initialize event listeners for the new form
+        this.initializeEventListeners();
+        
+        console.log('✅ Chat area created successfully');
+        return true;
     }
 }
 

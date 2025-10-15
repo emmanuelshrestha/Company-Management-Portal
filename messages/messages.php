@@ -358,7 +358,7 @@ if (isset($_GET['friend_id'])) {
             }
             
             .chat-area {
-                display: flex; /* Always show if friend is selected */
+                display: flex !important; /* Force visibility when messages load */
             }
         }
     </style>
@@ -458,5 +458,20 @@ if (isset($_GET['friend_id'])) {
     </div>
 
     <script src="js/messages.js"></script>
+        <!-- DEBUG SCRIPT - Keep this separate from messages.js -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🏠 DOM Ready - Checking elements:');
+        console.log('messagesArea:', document.getElementById('messagesArea'));
+        console.log('conversationId input:', document.getElementById('conversationId'));
+        console.log('URL friend_id:', new URLSearchParams(window.location.search).get('friend_id'));
+        
+        // Check if we should have a chat area based on PHP
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('friend_id')) {
+            console.log('🔍 Friend ID in URL - chat area should be visible');
+        }
+    });
+    </script>
 </body>
 </html>
