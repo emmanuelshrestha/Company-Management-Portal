@@ -14,12 +14,15 @@ class MessageManager {
         this.initializeEventListeners();
         await this.loadConversations();
 
-        // If friend_id present in URL, open that conversation (if exists)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('friend_id')) {
-            const friendId = urlParams.get('friend_id');
-            this.openConversationFromUrl(friendId);
-        }
+        // Wait for DOM to be completely ready
+        setTimeout(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('friend_id')) {
+                const friendId = urlParams.get('friend_id');
+                console.log('🔄 Opening conversation from URL:', friendId);
+                this.openConversationFromUrl(friendId);
+            }
+        }, 500); // Increased delay to ensure PHP rendering is complete
     }
 
     initializeEventListeners() {
@@ -223,8 +226,13 @@ class MessageManager {
 
         if (!message || !conversationId) return;
 
+        // Disable UI
         const sendButton = document.getElementById('sendButton');
-        if (sendButton) sendButton.disabled = true;
+        const originalText = sendButton.innerHTML;
+        if (sendButton) {
+            sendButton.disabled = true;
+            sendButton.innerHTML = '⏳';
+        }
 
         try {
             const response = await fetch('send_message.php', {
@@ -236,46 +244,58 @@ class MessageManager {
             const data = await response.json();
 
             if (data.success) {
+                // Clear input
                 if (messageInput) {
                     messageInput.value = '';
                     messageInput.style.height = 'auto';
                 }
-                // Refresh conversations (keeps functionality the same)
+                
+                // Add message to chat INSTANTLY
+                if (data.message) {
+                    this.addMessageToChat(data.message);
+                }
+                
+                // Refresh conversations list
                 await this.loadConversations();
             } else {
-                console.error('Failed to send message:', data.error);
-                alert('Failed to send message. Please try again.');
+                alert('Failed to send message: ' + (data.error || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            alert('Error sending message. Please check your connection.');
+            alert('Network error. Please check your connection.');
         } finally {
-            if (sendButton) sendButton.disabled = false;
+            // Re-enable UI
+            if (sendButton) {
+                sendButton.disabled = false;
+                sendButton.innerHTML = originalText;
+            }
         }
-    }
-
-    addMessageToChat(messageData) {
-        const container = document.getElementById('messagesArea');
-        if (!container) return;
-
-        // Remove empty-state if present
-        if (container.querySelector('h3')) container.innerHTML = '';
-
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${messageData.is_me ? 'sent' : 'received'}`;
-        messageElement.innerHTML = `
-            <div class="message-text">${this.escapeHtml(messageData.message)}</div>
-            <div class="message-time">${this.formatTime(messageData.created_at)}</div>
-        `;
-
-        container.appendChild(messageElement);
-        this.scrollToBottom();
     }
 
     // openConversation optionally accepts the clicked element to manage UI state
     async openConversation(friendId, conversationId = null, clickedElement = null) {
+        // Wait for chat area to be ready
+        if (!document.getElementById('messagesArea')) {
+            console.log('⏳ Waiting for chat area to be ready...');
+            setTimeout(() => {
+                this.openConversation(friendId, conversationId, clickedElement);
+            }, 300);
+            return;
+        }
+
         // Remove active from all
-        document.querySelectorAll('.conversation-item').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.conversation-item.active').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // If no clickedElement but we have friendId, find and activate the correct item
+        if (!clickedElement && friendId) {
+            clickedElement = document.querySelector(`.conversation-item[data-friend-id="${friendId}"]`);
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+                clickedElement.style.opacity = '0.7';
+            }
+        }
 
         // Add loading style to clicked element if provided
         if (clickedElement) {
@@ -299,10 +319,10 @@ class MessageManager {
                 finalConversationId = data.conversation_id;
             }
 
-            // Update URL without reload
+            // Update URL without reload - BUT don't interfere with current flow
             const url = new URL(window.location);
             url.searchParams.set('friend_id', friendId);
-            window.history.pushState({}, '', url);
+            window.history.replaceState({}, '', url); // Use replaceState instead of pushState
 
             this.currentConversationId = finalConversationId;
             const convIdInput = document.getElementById('conversationId');
@@ -323,7 +343,7 @@ class MessageManager {
     startPolling() {
         if (this.pollingInterval) clearInterval(this.pollingInterval);
 
-        this.pollingInterval = setInterval(() => this.checkNewMessages(), 3000);
+        this.pollingInterval = setInterval(() => this.checkNewMessages(), 2000); // 2 seconds
     }
 
     stopPolling() {
@@ -426,6 +446,26 @@ class MessageManager {
     openConversationWithoutEvent(friendId, conversationId) {
         // Trigger openConversation without a click element
         this.openConversation(friendId, conversationId, null);
+    }
+
+    addMessageToChat(messageData) {
+        const container = document.getElementById('messagesArea');
+        if (!container) return;
+
+        // Remove "no messages" text if present
+        if (container.querySelector('h3')) {
+            container.innerHTML = '';
+        }
+
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${messageData.is_me ? 'sent' : 'received'}`;
+        messageElement.innerHTML = `
+            <div class="message-text">${this.escapeHtml(messageData.message)}</div>
+            <div class="message-time">${this.formatTime(messageData.created_at)}</div>
+        `;
+
+        container.appendChild(messageElement);
+        this.scrollToBottom();
     }
 }
 

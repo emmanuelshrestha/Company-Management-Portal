@@ -2,6 +2,11 @@
 session_start();
 require __DIR__ . '/../config/db.php';
 
+// CSRF Protection
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -353,7 +358,7 @@ if (isset($_GET['friend_id'])) {
             }
             
             .chat-area {
-                display: <?php echo $selected_friend ? 'flex' : 'none'; ?>;
+                display: flex; /* Always show if friend is selected */
             }
         }
     </style>
@@ -415,20 +420,18 @@ if (isset($_GET['friend_id'])) {
                     </div>
 
                     <div class="messages-area" id="messagesArea">
-                        <!-- Messages will be loaded via JavaScript -->
-                         <div class="messages-area" id="messagesArea">
-                            <!-- Debug info -->
-                            <div id="debugInfo" style="display: none; background: #ffebee; padding: 10px; margin: 10px; border-radius: 5px;">
-                                Debug: Conversation ID: <span id="debugConvId"></span><br>
-                                Status: <span id="debugStatus">Loading...</span>
-                            </div>
-                            <!-- Messages will be loaded via JavaScript -->
+                        <!-- Debug info -->
+                        <div id="debugInfo" style="display: none; background: #ffebee; padding: 10px; margin: 10px; border-radius: 5px;">
+                            Debug: Conversation ID: <span id="debugConvId"></span><br>
+                            Status: <span id="debugStatus">Loading...</span>
                         </div>
+                        <!-- Messages will be loaded via JavaScript -->
                     </div>
 
                     <div class="message-input-area">
-                        <form class="message-input-form" id="messageForm">
-                            <input type="hidden" id="conversationId" value="<?php echo $conversation_id; ?>">
+                    <form class="message-input-form" id="messageForm">
+                        <input type="hidden" id="conversationId" value="<?php echo $conversation_id; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                             <textarea 
                                 class="message-input" 
                                 id="messageInput" 
