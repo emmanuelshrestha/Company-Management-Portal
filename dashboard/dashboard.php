@@ -45,16 +45,6 @@ $friendStmt->close();
 $message = "";
 $msgClass = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    error_log("POST Data: " . print_r($_POST, true), 3, __DIR__ . '/../../logs/csrf_debug.log');
-
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        $message = "<p>Invalid CSRF token.</p>";
-        $msgClass = "msg-error";
-        error_log("CSRF validation failed. POST token: " . ($_POST['csrf_token'] ?? 'not set') . ", Session token: " . ($_SESSION['csrf_token'] ?? 'not set'), 3, __DIR__ . '/../../logs/csrf_debug.log');
-    } else {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        error_log("New CSRF Token after submission: " . $_SESSION['csrf_token'], 3, __DIR__ . '/../../logs/csrf_debug.log');
-
         $friend_id = filter_var($_POST['friend_id'] ?? 0, FILTER_VALIDATE_INT);
         if ($friend_id && $_POST['action'] === 'accept') {
             $sql = "UPDATE friends SET status = 'approved' WHERE user_id = ? AND friend_id = ?";
@@ -70,7 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
         }
-    }
 }
 ?>
 
