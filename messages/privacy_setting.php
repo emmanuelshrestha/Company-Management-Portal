@@ -68,73 +68,7 @@ $userHeaderStmt->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Settings - <?php echo htmlspecialchars($user['name']); ?></title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .privacy-option {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .privacy-option:hover {
-            border-color: #cbd5e0;
-        }
-        
-        .privacy-option.selected {
-            border-color: #667eea;
-            background: #f7fafc;
-        }
-        
-        .privacy-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-        
-        .privacy-icon {
-            font-size: 24px;
-            width: 40px;
-            text-align: center;
-        }
-        
-        .privacy-title {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 5px;
-        }
-        
-        .privacy-description {
-            color: #718096;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .privacy-radio {
-            display: none;
-        }
-        
-        .settings-section {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .settings-section h3 {
-            margin: 0 0 20px 0;
-            color: #2d3748;
-            font-size: 18px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f7fafc;
-        }
-    </style>
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body class="dashboard-page">
     <div class="container">
