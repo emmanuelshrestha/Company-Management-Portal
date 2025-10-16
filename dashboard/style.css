@@ -276,6 +276,18 @@ button:disabled,
     white-space: nowrap;
 }
 
+/* Ensure button text is always visible */
+.action-btn,
+.action-btn.btn-small,
+.action-btn.small {
+    color: white;
+}
+
+.action-btn.secondary,
+.action-btn.secondary.btn-small {
+    color: var(--text-secondary);
+}
+
 .logout-btn {
     padding: 10px 20px;
     background: var(--danger);
@@ -389,12 +401,27 @@ button:disabled,
     font-weight: 700;
 }
 
-.stat-number a {
+.stat-number a,
+.stat-card a {
     display: block;
     font-size: 14px;
     font-weight: normal;
     margin-top: 5px;
     color: var(--primary);
+    text-decoration: none;
+    transition: color 0.3s, transform 0.2s;
+}
+
+.stat-number a:hover,
+.stat-card a:hover {
+    color: var(--primary-dark);
+    text-decoration: none;
+    transform: translateX(2px);
+}
+
+.stat-number a:active,
+.stat-card a:active {
+    color: var(--primary-dark);
 }
 
 /* =====================================================
