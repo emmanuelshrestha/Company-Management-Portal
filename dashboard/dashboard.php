@@ -4,7 +4,7 @@ require __DIR__ . '/../config/db.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ../modules/user/login.php');
     exit;
 }
 
