@@ -714,7 +714,7 @@ $postCountStmt->close();
                     <div class="nav-icon">💬</div>
                     <span>Messages</span>
                 </a>
-                <a href="edit-profile.php" class="sidebar-nav-item">
+                <a href="settings.php" class="sidebar-nav-item">
                     <div class="nav-icon">⚙️</div>
                     <span>Settings</span>
                 </a>

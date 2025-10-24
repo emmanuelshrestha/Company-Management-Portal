@@ -1212,7 +1212,7 @@ if (isset($_GET['friend_id'])) {
                     <div class="nav-icon">💬</div>
                     <span>Messages</span>
                 </a>
-                <a href="../dashboard/edit-profile.php" class="sidebar-nav-item">
+                <a href="../dashboard/settings.php" class="sidebar-nav-item">
                     <div class="nav-icon">⚙️</div>
                     <span>Settings</span>
                 </a>
