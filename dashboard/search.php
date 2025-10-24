@@ -32,13 +32,17 @@ $search_query = isset($_GET['search_query']) ? trim($_GET['search_query']) : '';
 
 if (!empty($search_query)) {
     $search_term = "%$search_query%";
-    $searchSql = "SELECT id, name, email, profile_picture, status FROM users 
-                  WHERE (name LIKE ? OR email LIKE ?) 
-                  AND id != ? 
-                  AND status = 'Verified'
-                  ORDER BY name LIMIT 20";
+    $searchSql = "SELECT u.id, u.name, u.email, u.profile_picture, u.status, 
+                  f.status AS friendship_status, f.user_id AS friendship_initiator
+                  FROM users u 
+                  LEFT JOIN friends f ON 
+                      (u.id = f.friend_id AND f.user_id = ?) OR (u.id = f.user_id AND f.friend_id = ?)
+                  WHERE (u.name LIKE ? OR u.email LIKE ?) 
+                  AND u.id != ? 
+                  AND u.status = 'Verified'
+                  ORDER BY u.name LIMIT 20";
     $searchStmt = $conn->prepare($searchSql);
-    $searchStmt->bind_param("ssi", $search_term, $search_term, $user_id);
+    $searchStmt->bind_param("iissi", $user_id, $user_id, $search_term, $search_term, $user_id);
     $searchStmt->execute();
     $search_results = $searchStmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $searchStmt->close();
@@ -797,6 +801,9 @@ $postCountStmt->close();
                     </div>
                     <div class="users-grid">
                         <?php foreach ($search_results as $result): ?>
+                            <?php
+                            $profile_page = ($result['friendship_status'] === 'approved') ? 'friend_profile.php' : 'public_profile.php';
+                            ?>
                             <div class="user-card">
                                 <div class="user-avatar-med" style="<?php echo !empty($result['profile_picture']) ? 'background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($result['profile_picture']) . ');' : ''; ?>">
                                     <?php if (empty($result['profile_picture'])) echo strtoupper(substr($result['name'], 0, 1)); ?>
@@ -809,17 +816,26 @@ $postCountStmt->close();
                                 </div>
                                 
                                 <div class="user-actions">
-                                    <a href="friend_profile.php?id=<?php echo $result['id']; ?>" class="action-btn secondary btn-small">
+                                    <a href="<?php echo $profile_page; ?>?id=<?php echo $result['id']; ?>" class="action-btn secondary btn-small">
                                         👀 View Profile
                                     </a>
-                                    <form method="POST" action="" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                                        <input type="hidden" name="send_request" value="1">
-                                        <input type="hidden" name="friend_id" value="<?php echo $result['id']; ?>">
-                                        <button type="submit" class="action-btn btn-small" data-user-name="<?php echo htmlspecialchars($result['name']); ?>">
-                                            ➕ Add Friend
-                                        </button>
-                                    </form>
+                                    <?php if ($result['friendship_status'] === 'approved'): ?>
+                                        <span class="pending-badge" style="background: #48bb78;">✅ Friends</span>
+                                    <?php elseif ($result['friendship_status'] === 'pending'): ?>
+                                        <?php
+                                        $direction = ($result['friendship_initiator'] == $user_id) ? ' (Sent)' : ' (Received)';
+                                        ?>
+                                        <span class="pending-badge">⏳ Pending<?php echo $direction; ?></span>
+                                    <?php else: ?>
+                                        <form method="POST" action="" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                            <input type="hidden" name="send_request" value="1">
+                                            <input type="hidden" name="friend_id" value="<?php echo $result['id']; ?>">
+                                            <button type="submit" class="action-btn btn-small" data-user-name="<?php echo htmlspecialchars($result['name']); ?>">
+                                                ➕ Add Friend
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -875,7 +891,7 @@ $postCountStmt->close();
                                 </div>
                                 
                                 <div class="user-actions">
-                                    <a href="friend_profile.php?id=<?php echo $request['friend_id']; ?>" class="action-btn secondary btn-small">
+                                    <a href="public_profile.php?id=<?php echo $request['friend_id']; ?>" class="action-btn secondary btn-small">
                                         👀 View Profile
                                     </a>
                                     <span class="pending-badge">⏳ Pending</span>
