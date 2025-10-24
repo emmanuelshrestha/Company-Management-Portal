@@ -550,7 +550,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <div class="nav-icon">💬</div>
                     <span>Messages</span>
                 </a>
-                <a href="settings.php" class="sidebar-nav-item">
+                <a href="../settings/settings.php" class="sidebar-nav-item">
                     <div class="nav-icon">⚙️</div>
                     <span>Settings</span>
                 </a>

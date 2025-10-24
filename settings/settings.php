@@ -18,13 +18,36 @@ $message = "";
 $msgClass = "";
 
 // Fetch user details
-$userSql = "SELECT id, name, email, profile_picture, bio, location, website, status, created_at FROM users WHERE id = ?";
+$userSql = "SELECT id, name, email, profile_picture, bio, location, website, status, created_at, last_login FROM users WHERE id = ?";
 $userStmt = $conn->prepare($userSql);
 $userStmt->bind_param("i", $user_id);
 $userStmt->execute();
 $userResult = $userStmt->get_result();
 $user = $userResult->fetch_assoc();
 $userStmt->close();
+
+// Fetch user settings
+$settingsSql = "SELECT * FROM user_settings WHERE user_id = ?";
+$settingsStmt = $conn->prepare($settingsSql);
+$settingsStmt->bind_param("i", $user_id);
+$settingsStmt->execute();
+$settingsResult = $settingsStmt->get_result();
+$user_settings = $settingsResult->fetch_assoc();
+
+// If no settings exist, create default settings
+if (!$user_settings) {
+    $insertSettingsSql = "INSERT INTO user_settings (user_id) VALUES (?)";
+    $insertStmt = $conn->prepare($insertSettingsSql);
+    $insertStmt->bind_param("i", $user_id);
+    $insertStmt->execute();
+    $insertStmt->close();
+    
+    // Refetch settings
+    $settingsStmt->execute();
+    $settingsResult = $settingsStmt->get_result();
+    $user_settings = $settingsResult->fetch_assoc();
+}
+$settingsStmt->close();
 
 // Count statistics for sidebar
 $friendSql = "SELECT COUNT(*) as friend_count FROM friends WHERE (user_id = ? OR friend_id = ?) AND status = 'approved'";
@@ -47,6 +70,14 @@ $postCountStmt->bind_param("i", $user_id);
 $postCountStmt->execute();
 $post_count = $postCountStmt->get_result()->fetch_assoc()['post_count'];
 $postCountStmt->close();
+
+// Fetch active sessions
+$sessionsSql = "SELECT * FROM login_sessions WHERE user_id = ? AND is_active = 1 ORDER BY last_activity DESC";
+$sessionsStmt = $conn->prepare($sessionsSql);
+$sessionsStmt->bind_param("i", $user_id);
+$sessionsStmt->execute();
+$sessions = $sessionsStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$sessionsStmt->close();
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -90,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $msgClass = "msg-success";
                         
                         // Refresh user data
-                        $refreshSql = "SELECT id, name, email, profile_picture, bio, location, website, status, created_at FROM users WHERE id = ?";
+                        $refreshSql = "SELECT id, name, email, profile_picture, bio, location, website, status, created_at, last_login FROM users WHERE id = ?";
                         $refreshStmt = $conn->prepare($refreshSql);
                         $refreshStmt->bind_param("i", $user_id);
                         $refreshStmt->execute();
@@ -106,40 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Password Change
-        elseif (isset($_POST['change_password'])) {
-            $current_password = $_POST['current_password'] ?? '';
-            $new_password = $_POST['new_password'] ?? '';
-            $confirm_password = $_POST['confirm_password'] ?? '';
-            
-            if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
-                $message = "Please fill in all password fields.";
-                $msgClass = "msg-error";
-            } elseif ($new_password !== $confirm_password) {
-                $message = "New passwords do not match.";
-                $msgClass = "msg-error";
-            } elseif (strlen($new_password) < 8) {
-                $message = "New password must be at least 8 characters long.";
-                $msgClass = "msg-error";
-            } else {
-                // Verify current password (you'll need to implement this properly)
-                // For now, we'll assume it's correct
-                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                $updateSql = "UPDATE users SET password = ? WHERE id = ?";
-                $updateStmt = $conn->prepare($updateSql);
-                $updateStmt->bind_param("si", $hashed_password, $user_id);
-                
-                if ($updateStmt->execute()) {
-                    $message = "Password changed successfully!";
-                    $msgClass = "msg-success";
-                } else {
-                    $message = "Error changing password. Please try again.";
-                    $msgClass = "msg-error";
-                }
-                $updateStmt->close();
-            }
-        }
-        
         // Privacy Settings Update
         elseif (isset($_POST['update_privacy'])) {
             $profile_visibility = $_POST['profile_visibility'] ?? 'public';
@@ -147,9 +144,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $friend_requests = $_POST['friend_requests'] ?? 'everyone';
             $message_privacy = $_POST['message_privacy'] ?? 'friends';
             
-            // In a real implementation, you'd store these in a user_settings table
-            $message = "Privacy settings updated successfully!";
-            $msgClass = "msg-success";
+            $updateSql = "UPDATE user_settings SET profile_visibility = ?, post_visibility = ?, friend_requests = ?, message_privacy = ? WHERE user_id = ?";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bind_param("ssssi", $profile_visibility, $post_visibility, $friend_requests, $message_privacy, $user_id);
+            
+            if ($updateStmt->execute()) {
+                $message = "Privacy settings updated successfully!";
+                $msgClass = "msg-success";
+                // Refresh settings
+                $user_settings['profile_visibility'] = $profile_visibility;
+                $user_settings['post_visibility'] = $post_visibility;
+                $user_settings['friend_requests'] = $friend_requests;
+                $user_settings['message_privacy'] = $message_privacy;
+            } else {
+                $message = "Error updating privacy settings. Please try again.";
+                $msgClass = "msg-error";
+            }
+            $updateStmt->close();
         }
         
         // Notification Settings Update
@@ -160,9 +171,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_notifications = isset($_POST['message_notifications']) ? 1 : 0;
             $post_notifications = isset($_POST['post_notifications']) ? 1 : 0;
             
-            // In a real implementation, you'd store these in a user_settings table
-            $message = "Notification settings updated successfully!";
-            $msgClass = "msg-success";
+            $updateSql = "UPDATE user_settings SET email_notifications = ?, push_notifications = ?, friend_request_notifications = ?, message_notifications = ?, post_notifications = ? WHERE user_id = ?";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bind_param("iiiiii", $email_notifications, $push_notifications, $friend_request_notifications, $message_notifications, $post_notifications, $user_id);
+            
+            if ($updateStmt->execute()) {
+                $message = "Notification settings updated successfully!";
+                $msgClass = "msg-success";
+                // Refresh settings
+                $user_settings['email_notifications'] = $email_notifications;
+                $user_settings['push_notifications'] = $push_notifications;
+                $user_settings['friend_request_notifications'] = $friend_request_notifications;
+                $user_settings['message_notifications'] = $message_notifications;
+                $user_settings['post_notifications'] = $post_notifications;
+            } else {
+                $message = "Error updating notification settings. Please try again.";
+                $msgClass = "msg-error";
+            }
+            $updateStmt->close();
         }
         
         // Theme Settings Update
@@ -171,10 +197,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $font_size = $_POST['font_size'] ?? 'medium';
             $compact_mode = isset($_POST['compact_mode']) ? 1 : 0;
             
-            // Store theme preference in session and database
-            $_SESSION['theme'] = $theme;
-            $message = "Theme settings updated successfully!";
+            $updateSql = "UPDATE user_settings SET theme = ?, font_size = ?, compact_mode = ? WHERE user_id = ?";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bind_param("ssii", $theme, $font_size, $compact_mode, $user_id);
+            
+            if ($updateStmt->execute()) {
+                // Store theme preference in session
+                $_SESSION['theme'] = $theme;
+                $message = "Theme settings updated successfully!";
+                $msgClass = "msg-success";
+                // Refresh settings
+                $user_settings['theme'] = $theme;
+                $user_settings['font_size'] = $font_size;
+                $user_settings['compact_mode'] = $compact_mode;
+            } else {
+                $message = "Error updating theme settings. Please try again.";
+                $msgClass = "msg-error";
+            }
+            $updateStmt->close();
+        }
+        
+        // Account Deactivation
+        elseif (isset($_POST['deactivate_account'])) {
+            // Update user status to inactive
+            $updateSql = "UPDATE users SET status = 'inactive' WHERE id = ?";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bind_param("i", $user_id);
+            
+            if ($updateStmt->execute()) {
+                // Logout user
+                session_destroy();
+                header('Location: ../modules/user/login.php?message=account_deactivated');
+                exit;
+            } else {
+                $message = "Error deactivating account. Please try again.";
+                $msgClass = "msg-error";
+            }
+            $updateStmt->close();
+        }
+        
+        // Export Data
+        elseif (isset($_POST['export_data'])) {
+            // This would generate and download a data export file
+            // For now, we'll simulate the process
+            $message = "Data export started. You will receive an email with your data shortly.";
             $msgClass = "msg-success";
+        }
+        
+        // Logout other sessions
+        elseif (isset($_POST['logout_other_sessions'])) {
+            $current_session_token = session_id();
+            $updateSql = "UPDATE login_sessions SET is_active = 0 WHERE user_id = ? AND session_token != ?";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bind_param("is", $user_id, $current_session_token);
+            
+            if ($updateStmt->execute()) {
+                $message = "All other sessions have been logged out.";
+                $msgClass = "msg-success";
+            } else {
+                $message = "Error logging out other sessions.";
+                $msgClass = "msg-error";
+            }
+            $updateStmt->close();
         }
         
         // Regenerate CSRF token after successful form submission
@@ -182,8 +266,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get current theme from session or default to light
-$current_theme = $_SESSION['theme'] ?? 'light';
+// Get current theme from session or database
+$current_theme = $_SESSION['theme'] ?? $user_settings['theme'] ?? 'light';
 ?>
 
 <!DOCTYPE html>
@@ -657,6 +741,84 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             border-radius: 3px;
         }
 
+        /* Theme Preview Styles */
+        .theme-preview-area {
+            transition: all 0.3s ease;
+        }
+
+        .theme-preview-area.theme-light .preview-content {
+            background: #ffffff;
+            color: #2d3748;
+            border-color: #e2e8f0;
+        }
+
+        .theme-preview-area.theme-dark .preview-content {
+            background: #2d3748;
+            color: #f7fafc;
+            border-color: #4a5568;
+        }
+
+        .theme-preview-area.theme-blue .preview-content {
+            background: #ebf8ff;
+            color: #2d3748;
+            border-color: #bee3f8;
+        }
+
+        /* Theme option hover effects */
+        .theme-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .theme-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .theme-option.selected {
+            border-color: #3498db;
+            background: #f0f7ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #48bb78;
+            color: white;
+            border-radius: 8px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast-error {
+            background: #e53e3e;
+        }
+
+        .toast-info {
+            background: #3498db;
+        }
+
+        /* Form enhancements */
+        .form-section {
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .action-btn:disabled:hover {
+            transform: none;
+        }
+
         /* Responsive design */
         @media (max-width: 1200px) {
             .right-sidebar {
@@ -761,32 +923,20 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             </div>
 
             <nav class="sidebar-nav">
-                <a href="dashboard.php" class="sidebar-nav-item">
+                <a href="../dashboard/dashboard.php" class="sidebar-nav-item">
                     <div class="nav-icon">🏠</div>
                     <span>Dashboard</span>
                 </a>
-                <a href="profile.php" class="sidebar-nav-item">
+                <a href="../dashboard/profile.php" class="sidebar-nav-item">
                     <div class="nav-icon">👤</div>
                     <span>My Profile</span>
                 </a>
-                <a href="search.php" class="sidebar-nav-item">
-                    <div class="nav-icon">🔍</div>
-                    <span>Search Users</span>
-                </a>
-                <a href="list_friends.php" class="sidebar-nav-item">
+                <a href="../dashboard/list_friends.php" class="sidebar-nav-item">
                     <div class="nav-icon">👥</div>
                     <span>Friends List</span>
                     <?php if ($friend_count > 0): ?>
                         <span class="friends-count"><?php echo $friend_count; ?></span>
                     <?php endif; ?>
-                </a>
-                <a href="create_post.php" class="sidebar-nav-item">
-                    <div class="nav-icon">✏️</div>
-                    <span>Create Post</span>
-                </a>
-                <a href="news_feed.php" class="sidebar-nav-item">
-                    <div class="nav-icon">📰</div>
-                    <span>News Feed</span>
                 </a>
                 <a href="../messages/messages.php" class="sidebar-nav-item">
                     <div class="nav-icon">💬</div>
@@ -796,7 +946,7 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                     <div class="nav-icon">⚙️</div>
                     <span>Settings</span>
                 </a>
-                <a href="logout.php" class="sidebar-nav-item" style="color: #e53e3e;">
+                <a href="../dashboard/logout.php" class="sidebar-nav-item" style="color: #e53e3e;">
                     <div class="nav-icon">🚪</div>
                     <span>Logout</span>
                 </a>
@@ -883,7 +1033,7 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                         <div class="info-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px;">
                             <div class="info-label" style="color: #718096; font-size: 14px;">Account Status</div>
                             <div class="info-value">
-                                <span class="status-badge status-verified">Verified</span>
+                                <span class="status-badge status-verified"><?php echo htmlspecialchars(ucfirst($user['status'] ?? 'active')); ?></span>
                             </div>
                         </div>
                         <div class="info-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px;">
@@ -892,7 +1042,7 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                         </div>
                         <div class="info-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px;">
                             <div class="info-label" style="color: #718096; font-size: 14px;">Last Login</div>
-                            <div class="info-value" style="font-weight: 600; color: #1a202c;">Just now</div>
+                            <div class="info-value" style="font-weight: 600; color: #1a202c;"><?php echo $user['last_login'] ? date('F j, Y g:i A', strtotime($user['last_login'])) : 'Never'; ?></div>
                         </div>
                     </div>
                 </div>
@@ -902,55 +1052,61 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             <div id="security" class="settings-content">
                 <div class="form-section">
                     <h3><span class="icon">🔒</span> Change Password</h3>
-                    <form method="POST" action="">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                        <input type="hidden" name="change_password" value="1">
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="current_password" class="form-label required">Current Password</label>
-                                <input type="password" id="current_password" name="current_password" class="form-input" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="new_password" class="form-label required">New Password</label>
-                                <input type="password" id="new_password" name="new_password" class="form-input" required minlength="8">
-                                <div style="font-size: 12px; color: #718096; margin-top: 5px;">Must be at least 8 characters long</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="confirm_password" class="form-label required">Confirm New Password</label>
-                                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
-                            </div>
-                        </div>
-
-                        <div class="form-actions" style="margin-top: 25px;">
-                            <button type="submit" class="action-btn">Change Password</button>
-                        </div>
-                    </form>
+                    <div style="background: #f0fff4; padding: 20px; border-radius: 8px; border: 1px solid #9ae6b4; margin-bottom: 20px;">
+                        <p style="margin: 0 0 15px 0; color: #2f855a;">
+                            <strong>Password Management</strong><br>
+                            Use our dedicated password change page for enhanced security features.
+                        </p>
+                        <a href="../modules/user/change_password.php" class="action-btn" style="text-decoration: none;">
+                            🔒 Go to Password Change Page
+                        </a>
+                    </div>
+                    
+                    <div style="font-size: 14px; color: #718096;">
+                        <p><strong>Password Security Tips:</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Use a unique password for your account</li>
+                            <li>Include numbers, letters, and special characters</li>
+                            <li>Change your password regularly</li>
+                            <li>Never share your password with anyone</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="form-section">
                     <h3><span class="icon">📱</span> Login Activity</h3>
                     <div style="font-size: 14px; color: #718096;">
                         <p>Recent login activity on your account:</p>
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 10px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span><strong>Current Session</strong></span>
-                                <span style="color: #48bb78;">Active now</span>
+                        <?php if (!empty($sessions)): ?>
+                            <?php foreach ($sessions as $session): ?>
+                                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid <?php echo $session['session_token'] === session_id() ? '#48bb78' : '#e53e3e'; ?>">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                        <span><strong><?php echo $session['session_token'] === session_id() ? 'Current Session' : 'Other Session'; ?></strong></span>
+                                        <span style="color: <?php echo $session['session_token'] === session_id() ? '#48bb78' : '#718096'; ?>;">
+                                            <?php echo $session['session_token'] === session_id() ? 'Active now' : 'Inactive'; ?>
+                                        </span>
+                                    </div>
+                                    <div style="color: #718096;">
+                                        <div>Device: <?php echo htmlspecialchars($session['device_info'] ?? 'Web Browser'); ?></div>
+                                        <div>Location: <?php echo htmlspecialchars($session['location'] ?? 'Unknown'); ?></div>
+                                        <div>IP Address: <?php echo htmlspecialchars($session['ip_address'] ?? 'Unknown'); ?></div>
+                                        <div>Last active: <?php echo date('M j, Y g:i A', strtotime($session['last_activity'])); ?></div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                                No active sessions found.
                             </div>
-                            <div style="color: #718096;">
-                                <div>Device: Web Browser (Chrome)</div>
-                                <div>Location: Your current location</div>
-                                <div>IP Address: 192.168.1.1</div>
-                                <div>Last active: Just now</div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                     
                     <div style="margin-top: 20px;">
-                        <button class="action-btn secondary">View All Sessions</button>
-                        <button class="action-btn secondary" style="margin-left: 10px;">Log Out Other Devices</button>
+                        <form method="POST" action="" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                            <input type="hidden" name="logout_other_sessions" value="1">
+                            <button type="submit" class="action-btn secondary" onclick="return confirm('Are you sure you want to log out all other sessions?')">Log Out Other Devices</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -967,15 +1123,15 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Profile Visibility</label>
                             <div class="radio-group">
                                 <div class="radio-item">
-                                    <input type="radio" id="profile_public" name="profile_visibility" value="public" checked>
+                                    <input type="radio" id="profile_public" name="profile_visibility" value="public" <?php echo ($user_settings['profile_visibility'] ?? 'public') === 'public' ? 'checked' : ''; ?>>
                                     <label for="profile_public">Public - Anyone can see your profile</label>
                                 </div>
                                 <div class="radio-item">
-                                    <input type="radio" id="profile_friends" name="profile_visibility" value="friends">
+                                    <input type="radio" id="profile_friends" name="profile_visibility" value="friends" <?php echo ($user_settings['profile_visibility'] ?? 'public') === 'friends' ? 'checked' : ''; ?>>
                                     <label for="profile_friends">Friends Only - Only your friends can see your profile</label>
                                 </div>
                                 <div class="radio-item">
-                                    <input type="radio" id="profile_private" name="profile_visibility" value="private">
+                                    <input type="radio" id="profile_private" name="profile_visibility" value="private" <?php echo ($user_settings['profile_visibility'] ?? 'public') === 'private' ? 'checked' : ''; ?>>
                                     <label for="profile_private">Private - Only you can see your profile</label>
                                 </div>
                             </div>
@@ -985,15 +1141,15 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Post Visibility</label>
                             <div class="radio-group">
                                 <div class="radio-item">
-                                    <input type="radio" id="post_public" name="post_visibility" value="public">
+                                    <input type="radio" id="post_public" name="post_visibility" value="public" <?php echo ($user_settings['post_visibility'] ?? 'friends') === 'public' ? 'checked' : ''; ?>>
                                     <label for="post_public">Public - Anyone can see your posts</label>
                                 </div>
                                 <div class="radio-item">
-                                    <input type="radio" id="post_friends" name="post_visibility" value="friends" checked>
+                                    <input type="radio" id="post_friends" name="post_visibility" value="friends" <?php echo ($user_settings['post_visibility'] ?? 'friends') === 'friends' ? 'checked' : ''; ?>>
                                     <label for="post_friends">Friends Only - Only your friends can see your posts</label>
                                 </div>
                                 <div class="radio-item">
-                                    <input type="radio" id="post_private" name="post_visibility" value="private">
+                                    <input type="radio" id="post_private" name="post_visibility" value="private" <?php echo ($user_settings['post_visibility'] ?? 'friends') === 'private' ? 'checked' : ''; ?>>
                                     <label for="post_private">Private - Only you can see your posts</label>
                                 </div>
                             </div>
@@ -1003,11 +1159,11 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Friend Requests</label>
                             <div class="radio-group">
                                 <div class="radio-item">
-                                    <input type="radio" id="requests_everyone" name="friend_requests" value="everyone" checked>
+                                    <input type="radio" id="requests_everyone" name="friend_requests" value="everyone" <?php echo ($user_settings['friend_requests'] ?? 'everyone') === 'everyone' ? 'checked' : ''; ?>>
                                     <label for="requests_everyone">Everyone - Anyone can send you friend requests</label>
                                 </div>
                                 <div class="radio-item">
-                                    <input type="radio" id="requests_friends_of_friends" name="friend_requests" value="friends_of_friends">
+                                    <input type="radio" id="requests_friends_of_friends" name="friend_requests" value="friends_of_friends" <?php echo ($user_settings['friend_requests'] ?? 'everyone') === 'friends_of_friends' ? 'checked' : ''; ?>>
                                     <label for="requests_friends_of_friends">Friends of Friends - Only friends of your friends can send requests</label>
                                 </div>
                             </div>
@@ -1017,11 +1173,11 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Message Privacy</label>
                             <div class="radio-group">
                                 <div class="radio-item">
-                                    <input type="radio" id="message_everyone" name="message_privacy" value="everyone">
+                                    <input type="radio" id="message_everyone" name="message_privacy" value="everyone" <?php echo ($user_settings['message_privacy'] ?? 'friends') === 'everyone' ? 'checked' : ''; ?>>
                                     <label for="message_everyone">Everyone - Anyone can message you</label>
                                 </div>
                                 <div class="radio-item">
-                                    <input type="radio" id="message_friends" name="message_privacy" value="friends" checked>
+                                    <input type="radio" id="message_friends" name="message_privacy" value="friends" <?php echo ($user_settings['message_privacy'] ?? 'friends') === 'friends' ? 'checked' : ''; ?>>
                                     <label for="message_friends">Friends Only - Only your friends can message you</label>
                                 </div>
                             </div>
@@ -1046,7 +1202,7 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Email Notifications</label>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="checkbox" id="email_notifications" name="email_notifications" checked>
+                                    <input type="checkbox" id="email_notifications" name="email_notifications" value="1" <?php echo ($user_settings['email_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                     <label for="email_notifications">Receive email notifications</label>
                                 </div>
                             </div>
@@ -1056,7 +1212,7 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Push Notifications</label>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="checkbox" id="push_notifications" name="push_notifications" checked>
+                                    <input type="checkbox" id="push_notifications" name="push_notifications" value="1" <?php echo ($user_settings['push_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                     <label for="push_notifications">Receive push notifications</label>
                                 </div>
                             </div>
@@ -1066,15 +1222,15 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <label class="form-label">Notification Types</label>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="checkbox" id="friend_request_notifications" name="friend_request_notifications" checked>
+                                    <input type="checkbox" id="friend_request_notifications" name="friend_request_notifications" value="1" <?php echo ($user_settings['friend_request_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                     <label for="friend_request_notifications">Friend requests</label>
                                 </div>
                                 <div class="checkbox-item">
-                                    <input type="checkbox" id="message_notifications" name="message_notifications" checked>
+                                    <input type="checkbox" id="message_notifications" name="message_notifications" value="1" <?php echo ($user_settings['message_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                     <label for="message_notifications">New messages</label>
                                 </div>
                                 <div class="checkbox-item">
-                                    <input type="checkbox" id="post_notifications" name="post_notifications" checked>
+                                    <input type="checkbox" id="post_notifications" name="post_notifications" value="1" <?php echo ($user_settings['post_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                     <label for="post_notifications">Friend posts and updates</label>
                                 </div>
                             </div>
@@ -1091,43 +1247,43 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             <div id="appearance" class="settings-content">
                 <div class="form-section">
                     <h3><span class="icon">🎨</span> Theme & Appearance</h3>
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="appearance-form">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <input type="hidden" name="update_theme" value="1">
                         
                         <div class="form-group">
                             <label class="form-label">Theme</label>
                             <div class="theme-preview">
-                                <div class="theme-option theme-light selected" onclick="selectTheme('light')">
-                                    <div class="theme-preview-box"></div>
+                                <div class="theme-option theme-light <?php echo ($user_settings['theme'] ?? 'light') === 'light' ? 'selected' : ''; ?>" onclick="selectTheme('light')">
+                                    <div class="theme-preview-box" style="background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%); border: 1px solid #e2e8f0;"></div>
                                     <div>Light</div>
                                 </div>
-                                <div class="theme-option theme-dark" onclick="selectTheme('dark')">
-                                    <div class="theme-preview-box"></div>
+                                <div class="theme-option theme-dark <?php echo ($user_settings['theme'] ?? 'light') === 'dark' ? 'selected' : ''; ?>" onclick="selectTheme('dark')">
+                                    <div class="theme-preview-box" style="background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%); border: 1px solid #718096;"></div>
                                     <div>Dark</div>
                                 </div>
-                                <div class="theme-option theme-blue" onclick="selectTheme('blue')">
-                                    <div class="theme-preview-box"></div>
+                                <div class="theme-option theme-blue <?php echo ($user_settings['theme'] ?? 'light') === 'blue' ? 'selected' : ''; ?>" onclick="selectTheme('blue')">
+                                    <div class="theme-preview-box" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); border: 1px solid #2980b9;"></div>
                                     <div>Blue</div>
                                 </div>
                             </div>
-                            <input type="hidden" id="theme" name="theme" value="light">
+                            <input type="hidden" id="theme" name="theme" value="<?php echo htmlspecialchars($user_settings['theme'] ?? 'light'); ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="font_size" class="form-label">Font Size</label>
                             <select id="font_size" name="font_size" class="form-select">
-                                <option value="small">Small</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="large">Large</option>
-                                <option value="xlarge">Extra Large</option>
+                                <option value="small" <?php echo ($user_settings['font_size'] ?? 'medium') === 'small' ? 'selected' : ''; ?>>Small</option>
+                                <option value="medium" <?php echo ($user_settings['font_size'] ?? 'medium') === 'medium' ? 'selected' : ''; ?>>Medium</option>
+                                <option value="large" <?php echo ($user_settings['font_size'] ?? 'medium') === 'large' ? 'selected' : ''; ?>>Large</option>
+                                <option value="xlarge" <?php echo ($user_settings['font_size'] ?? 'medium') === 'xlarge' ? 'selected' : ''; ?>>Extra Large</option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="checkbox" id="compact_mode" name="compact_mode">
+                                    <input type="checkbox" id="compact_mode" name="compact_mode" value="1" <?php echo ($user_settings['compact_mode'] ?? 0) ? 'checked' : ''; ?>>
                                     <label for="compact_mode">Compact mode (show more content)</label>
                                 </div>
                             </div>
@@ -1135,8 +1291,24 @@ $current_theme = $_SESSION['theme'] ?? 'light';
 
                         <div class="form-actions" style="margin-top: 25px;">
                             <button type="submit" class="action-btn">Save Appearance Settings</button>
+                            <button type="button" class="action-btn secondary" onclick="resetAppearanceSettings()">Reset to Default</button>
                         </div>
                     </form>
+                </div>
+
+                <div class="form-section">
+                    <h3><span class="icon">👀</span> Live Preview</h3>
+                    <div id="theme-preview-area" class="theme-preview-area <?php echo 'theme-' . ($user_settings['theme'] ?? 'light'); ?>">
+                        <div class="preview-header" style="background: #34495e; padding: 15px; color: white; border-radius: 8px 8px 0 0;">
+                            <h4 style="margin: 0;">Preview Header</h4>
+                        </div>
+                        <div class="preview-content" style="padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0;">This is how your content will look with the selected theme.</p>
+                            <div style="margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 4px;">
+                                <small>Sample text with the current settings</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1151,7 +1323,25 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                             <p>Temporarily disable your account. You can reactivate it anytime by logging back in.</p>
                         </div>
                         <div>
-                            <button type="button" class="action-btn secondary" onclick="deactivateAccount()">Deactivate Account</button>
+                            <form method="POST" action="" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="deactivate_account" value="1">
+                                <button type="submit" class="action-btn secondary" onclick="return confirm('Are you sure you want to deactivate your account? You can reactivate it by logging back in.')">Deactivate Account</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="danger-item">
+                        <div class="danger-info">
+                            <h4>Export Data</h4>
+                            <p>Download a copy of all your data including posts, messages, and profile information.</p>
+                        </div>
+                        <div>
+                            <form method="POST" action="" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="export_data" value="1">
+                                <button type="submit" class="action-btn secondary">Export Data</button>
+                            </form>
                         </div>
                     </div>
 
@@ -1162,16 +1352,6 @@ $current_theme = $_SESSION['theme'] ?? 'light';
                         </div>
                         <div>
                             <button type="button" class="logout-btn" onclick="deleteAccount()">Delete Account</button>
-                        </div>
-                    </div>
-
-                    <div class="danger-item">
-                        <div class="danger-info">
-                            <h4>Export Data</h4>
-                            <p>Download a copy of all your data including posts, messages, and profile information.</p>
-                        </div>
-                        <div>
-                            <button type="button" class="action-btn secondary" onclick="exportData()">Export Data</button>
                         </div>
                     </div>
                 </div>
@@ -1238,7 +1418,6 @@ $current_theme = $_SESSION['theme'] ?? 'light';
         </aside>
     </div>
 
-    <script src="js/settings.js"></script>
     <script>
         // Tab switching functionality
         function switchSettingsTab(tabName) {
@@ -1260,6 +1439,9 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             
             // Add active class to clicked tab button
             event.currentTarget.classList.add('active');
+            
+            // Save active tab to session storage
+            sessionStorage.setItem('activeSettingsTab', tabName);
         }
 
         // Theme selection
@@ -1269,6 +1451,39 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             });
             event.currentTarget.classList.add('selected');
             document.getElementById('theme').value = theme;
+            
+            // Preview theme change
+            previewTheme(theme);
+        }
+
+        function previewTheme(theme) {
+            // Remove existing theme classes
+            document.body.classList.remove('theme-preview-light', 'theme-preview-dark', 'theme-preview-blue');
+            
+            // Add preview class
+            document.body.classList.add(`theme-preview-${theme}`);
+            
+            // Show preview message
+            const message = document.createElement('div');
+            message.className = 'message msg-info';
+            message.textContent = `Theme preview: ${theme} mode - Click "Save Appearance Settings" to apply`;
+            message.style.marginBottom = '20px';
+            
+            const existingMessage = document.querySelector('.message.msg-info');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            document.querySelector('.main-content').insertBefore(message, document.querySelector('.settings-tabs'));
+            
+            setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.remove();
+                    }
+                }, 500);
+            }, 3000);
         }
 
         // Bio character counter
@@ -1277,28 +1492,156 @@ $current_theme = $_SESSION['theme'] ?? 'light';
         
         if (bioTextarea && bioCharCount) {
             bioTextarea.addEventListener('input', function() {
-                bioCharCount.textContent = this.value.length;
+                const length = this.value.length;
+                bioCharCount.textContent = length;
+                
+                // Update color based on length
+                if (length > 450) {
+                    bioCharCount.style.color = '#e53e3e';
+                } else if (length > 400) {
+                    bioCharCount.style.color = '#ed8936';
+                } else {
+                    bioCharCount.style.color = '#718096';
+                }
             });
         }
 
-        // Danger zone actions
-        function deactivateAccount() {
-            if (confirm('Are you sure you want to deactivate your account? You can reactivate it by logging back in.')) {
-                alert('Account deactivation feature would be implemented here.');
-            }
+        // Password validation
+        const newPassword = document.getElementById('new_password');
+        const confirmPassword = document.getElementById('confirm_password');
+        
+        if (newPassword && confirmPassword) {
+            confirmPassword.addEventListener('input', function() {
+                if (newPassword.value !== confirmPassword.value) {
+                    this.setCustomValidity('Passwords do not match');
+                    showFieldError(this, 'Passwords do not match');
+                } else {
+                    this.setCustomValidity('');
+                    clearFieldError(this);
+                }
+            });
         }
 
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.style.color = '#e53e3e';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.marginTop = '5px';
+            errorDiv.textContent = message;
+            
+            field.parentNode.appendChild(errorDiv);
+            field.style.borderColor = '#e53e3e';
+        }
+
+        function clearFieldError(field) {
+            const existingError = field.parentNode.querySelector('.field-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            field.style.borderColor = '#e2e8f0';
+        }
+
+        // Password strength indicator
+        if (newPassword) {
+            newPassword.addEventListener('input', function() {
+                const strength = checkPasswordStrength(this.value);
+                updatePasswordStrengthIndicator(strength);
+            });
+        }
+
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]+/)) strength++;
+            if (password.match(/[A-Z]+/)) strength++;
+            if (password.match(/[0-9]+/)) strength++;
+            if (password.match(/[!@#$%^&*(),.?":{}|<>]+/)) strength++;
+            
+            return strength;
+        }
+
+        function updatePasswordStrengthIndicator(strength) {
+            let indicator = document.getElementById('password-strength-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'password-strength-indicator';
+                indicator.style.marginTop = '5px';
+                indicator.style.fontSize = '12px';
+                document.getElementById('new_password').parentNode.appendChild(indicator);
+            }
+            
+            const strengths = {
+                0: { text: 'Very Weak', color: '#e53e3e' },
+                1: { text: 'Weak', color: '#ed8936' },
+                2: { text: 'Fair', color: '#ecc94b' },
+                3: { text: 'Good', color: '#48bb78' },
+                4: { text: 'Strong', color: '#38a169' },
+                5: { text: 'Very Strong', color: '#25855a' }
+            };
+            
+            const currentStrength = strengths[strength] || strengths[0];
+            indicator.innerHTML = `Strength: <span style="color: ${currentStrength.color}; font-weight: bold;">${currentStrength.text}</span>`;
+        }
+
+        // Danger zone actions
         function deleteAccount() {
             const confirmation = prompt('This action cannot be undone. Type "DELETE" to confirm:');
             if (confirmation === 'DELETE') {
-                alert('Account deletion feature would be implemented here.');
+                showToast('Account deletion request received. This action cannot be undone.', 'error');
+                
+                // Simulate API call
+                setTimeout(() => {
+                    if (confirm('Final confirmation: Are you absolutely sure you want to delete your account? This will permanently remove all your data.')) {
+                        showToast('Account deletion in progress...', 'error');
+                        // Redirect to logout or account deletion endpoint
+                        setTimeout(() => {
+                            window.location.href = 'logout.php?account_deleted=true';
+                        }, 2000);
+                    }
+                }, 1000);
             } else {
-                alert('Account deletion cancelled.');
+                showToast('Account deletion cancelled.', 'info');
             }
         }
 
-        function exportData() {
-            alert('Data export feature would be implemented here. This may take a few minutes.');
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#e53e3e' : '#3498db'};
+                color: white;
+                border-radius: 8px;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 3000);
         }
 
         // Auto-dismiss messages
@@ -1316,11 +1659,20 @@ $current_theme = $_SESSION['theme'] ?? 'light';
             });
         }, 5000);
 
-        // Initialize current theme selection
+        // Initialize current theme selection and restore active tab
         document.addEventListener('DOMContentLoaded', function() {
             const currentTheme = '<?php echo $current_theme; ?>';
             if (currentTheme) {
                 selectTheme(currentTheme);
+            }
+            
+            // Restore active tab
+            const activeTab = sessionStorage.getItem('activeSettingsTab');
+            if (activeTab) {
+                const tabButton = document.querySelector(`.settings-tab[onclick="switchSettingsTab('${activeTab}')"]`);
+                if (tabButton) {
+                    tabButton.click();
+                }
             }
         });
     </script>

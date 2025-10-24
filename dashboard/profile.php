@@ -957,7 +957,7 @@ function handleImageUpload($file, $type) {
                     <div class="nav-icon">💬</div>
                     <span>Messages</span>
                 </a>
-                <a href="settings.php" class="sidebar-nav-item">
+                <a href="../settings/settings.php" class="sidebar-nav-item">
                     <div class="nav-icon">⚙️</div>
                     <span>Settings</span>
                 </a>
