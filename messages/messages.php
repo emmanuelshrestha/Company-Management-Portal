@@ -1157,18 +1157,24 @@ if (isset($_GET['friend_id'])) {
 
     <!-- Main header -->
     <div class="main-header">
-        <h1 class="logo-text">Manexis</h1>
-        <div class="search-bar-container">
+        <h1 class="logo-text">
+            <a href="../dashboard/dashboard.php" class="logo-link">Manexis</a>
+        </h1>
+        <form method="GET" action="search.php" class="search-bar-container">
             <span class="search-icon"><img src="../assets/images/search.png" alt="Home" style="width:20px;height:20px;margin-top:10px"></span>
-            <input type="text" placeholder="Search for friends, posts, and more...">
-        </div>
+            <input type="text" name="search_query" placeholder="Search for friends, posts, and more...">
+        </form>
         <div class="header-right">
-            <a href="../dashboard/create_post.php" class="action-btn">Create Post</a>
+            <a href="create_post.php" class="action-btn">Create Post</a>
             <?php 
             if (!empty($user['profile_picture'])) {
+                echo '<a href="../dashboard/profile.php" class="profile-link">';
                 echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . ');"></div>';
+                echo '</a>';
             } else {
+                echo '<a href="../dashboard/profile.php" class="profile-link">';
                 echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+                echo '</a>';
             }
             ?>
         </div>

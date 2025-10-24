@@ -1889,3 +1889,23 @@ ul li {
     border-top: 1px solid var(--card-border);
     padding-top: 15px;
 }
+
+.profile-link {
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.profile-link:hover .user-avatar {
+    opacity: 0.8; /* Optional: Add hover effect */
+}
+
+.logo-link {
+    text-decoration: none;
+    color: inherit; /* This will inherit the color from the h1 */
+    cursor: pointer;
+}
+
+.logo-link:hover {
+    opacity: 0.8; /* Optional: Add hover effect */
+}
