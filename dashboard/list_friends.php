@@ -134,7 +134,7 @@ $friendsStmt->close();
 // Count total friends
 $total_friends = count($friends);
 
-// Fetch pending received requests for stats
+// Fetch pending received for stats
 $pendingReceivedSql = "SELECT COUNT(*) as count FROM friends WHERE friend_id = ? AND status = 'pending'";
 $pendingStmt = $conn->prepare($pendingReceivedSql);
 $pendingStmt->bind_param("i", $user_id);
@@ -142,7 +142,7 @@ $pendingStmt->execute();
 $pending_received = $pendingStmt->get_result()->fetch_assoc()['count'];
 $pendingStmt->close();
 
-// Fetch pending sent requests for stats
+// Fetch pending sent for stats
 $pendingSentSql = "SELECT COUNT(*) as count FROM friends WHERE user_id = ? AND status = 'pending'";
 $pendingSentStmt = $conn->prepare($pendingSentSql);
 $pendingSentStmt->bind_param("i", $user_id);
@@ -159,21 +159,19 @@ $pendingSentStmt->close();
     <title>Friends List - <?php echo htmlspecialchars($user['name']); ?> - Manexis</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        /* Dashboard-style layout */
+        /* Styles copied from list_friends.php, removing search-related styles */
         body {
             margin: 0;
             padding: 0;
             background: #f5f5f5;
         }
 
-        /* Top dark header bar */
         .top-header-bar {
             background: #4a4a4a;
             height: 40px;
             width: 100%;
         }
 
-        /* Main header with logo and search */
         .main-header {
             background: white;
             padding: 15px 40px;
@@ -228,7 +226,6 @@ $pendingSentStmt->close();
             gap: 20px;
         }
 
-        /* Main layout container */
         .dashboard-container {
             display: flex;
             max-width: 1400px;
@@ -237,7 +234,6 @@ $pendingSentStmt->close();
             padding: 0 20px;
         }
 
-        /* Left sidebar */
         .left-sidebar {
             width: 280px;
             position: sticky;
@@ -294,7 +290,6 @@ $pendingSentStmt->close();
             font-size: 20px;
         }
 
-        /* Main content area - EXPANDED */
         .main-content {
             flex: 1;
             background: white;
@@ -306,7 +301,6 @@ $pendingSentStmt->close();
             min-height: calc(100vh - 150px);
         }
 
-        /* Right sidebar */
         .right-sidebar {
             width: 320px;
             position: sticky;
@@ -331,7 +325,6 @@ $pendingSentStmt->close();
             padding-bottom: 10px;
         }
 
-        /* Quick Stats in sidebar */
         .quick-stats-item {
             display: flex;
             justify-content: space-between;
@@ -342,7 +335,6 @@ $pendingSentStmt->close();
             margin-bottom: 8px;
         }
 
-        /* Friends List Specific Styles */
         .friends-header {
             background: white;
             border-radius: 12px;
@@ -377,7 +369,6 @@ $pendingSentStmt->close();
             margin-left: 15px;
         }
 
-        /* Stats Grid */
         .friends-stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -414,37 +405,6 @@ $pendingSentStmt->close();
             letter-spacing: 0.5px;
         }
 
-        /* Search Section */
-        .friends-search-section {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-        }
-
-        .search-container {
-            position: relative;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 15px 15px 15px 45px;
-            border: 2px solid #e2e8f0;
-            border-radius: 25px;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .search-input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-
-        /* Friends List */
         .friends-list-container {
             background: white;
             border-radius: 12px;
@@ -557,7 +517,6 @@ $pendingSentStmt->close();
             flex-shrink: 0;
         }
 
-        /* Empty State */
         .friends-empty-state {
             padding: 60px 30px;
             text-align: center;
@@ -569,7 +528,6 @@ $pendingSentStmt->close();
             opacity: 0.5;
         }
 
-        /* Scrollbar styling */
         .left-sidebar::-webkit-scrollbar,
         .right-sidebar::-webkit-scrollbar,
         .friends-grid::-webkit-scrollbar {
@@ -589,7 +547,6 @@ $pendingSentStmt->close();
             border-radius: 3px;
         }
 
-        /* Responsive design */
         @media (max-width: 1200px) {
             .right-sidebar {
                 display: none;
@@ -679,10 +636,10 @@ $pendingSentStmt->close();
     <!-- Main header -->
     <div class="main-header">
         <h1 class="logo-text">Manexis</h1>
-        <div class="search-bar-container">
+        <form method="GET" action="search.php" class="search-bar-container">
             <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Search for friends, posts, and more...">
-        </div>
+            <input type="text" name="search_query" placeholder="Search for friends, posts, and more...">
+        </form>
         <div class="header-right">
             <a href="create_post.php" class="action-btn">Create Post</a>
             <?php 
@@ -722,7 +679,7 @@ $pendingSentStmt->close();
                     <div class="nav-icon">👤</div>
                     <span>Profile</span>
                 </a>
-                <a href="add_friend.php" class="sidebar-nav-item">
+                <a href="search.php" class="sidebar-nav-item">
                     <div class="nav-icon">➕</div>
                     <span>Add Friends</span>
                 </a>
@@ -769,7 +726,7 @@ $pendingSentStmt->close();
                     <p>Manage your connections and stay in touch with friends</p>
                 </div>
                 <div class="friends-header-actions">
-                    <a href="add_friend.php" class="action-btn">➕ Add Friends</a>
+                    <a href="search.php" class="action-btn">➕ Add Friends</a>
                     <a href="dashboard.php" class="action-btn secondary">🏠 Dashboard</a>
                 </div>
             </div>
@@ -797,13 +754,6 @@ $pendingSentStmt->close();
                 </div>
             </div>
 
-            <!-- Search Section -->
-            <div class="friends-search-section">
-                <div class="search-container">
-                    <input type="text" class="search-input" id="friendSearch" placeholder="Search friends by name or email...">
-                </div>
-            </div>
-
             <!-- Friends List -->
             <div class="friends-list-container">
                 <div class="friends-list-header">
@@ -822,7 +772,7 @@ $pendingSentStmt->close();
                         <p style="color: #718096; margin-bottom: 25px; max-width: 400px; margin-left: auto; margin-right: auto;">
                             Start building your network by adding friends! Connect with people you know and expand your social circle.
                         </p>
-                        <a href="add_friend.php" class="action-btn" style="margin-right: 10px;">Add Your First Friend</a>
+                        <a href="search.php" class="action-btn" style="margin-right: 10px;">Add Your First Friend</a>
                         <a href="dashboard.php" class="action-btn secondary">Back to Dashboard</a>
                     </div>
                 <?php else: ?>
@@ -903,7 +853,7 @@ $pendingSentStmt->close();
             <div class="sidebar-card">
                 <h3>Quick Actions</h3>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <a href="add_friend.php" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; text-decoration: none; color: #2d3748; transition: background 0.2s;">
+                    <a href="search.php" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; text-decoration: none; color: #2d3748; transition: background 0.2s;">
                         <span>➕</span>
                         <span>Add Friends</span>
                     </a>
@@ -934,35 +884,8 @@ $pendingSentStmt->close();
     </div>
 
     <script>
-        // Enhanced Friends List JavaScript
+        // Updated list_friends.js
         document.addEventListener('DOMContentLoaded', function() {
-            const friendSearch = document.getElementById('friendSearch');
-            const friendCards = document.querySelectorAll('.friend-card');
-            
-            // Search functionality
-            if (friendSearch) {
-                friendSearch.addEventListener('input', function(e) {
-                    const searchTerm = e.target.value.toLowerCase().trim();
-                    
-                    friendCards.forEach(card => {
-                        const name = card.getAttribute('data-name');
-                        const email = card.getAttribute('data-email');
-                        
-                        if (name.includes(searchTerm) || email.includes(searchTerm)) {
-                            card.style.display = 'flex';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                    
-                    // Update visible count
-                    updateVisibleCount();
-                });
-                
-                // Auto-focus search input
-                friendSearch.focus();
-            }
-            
             // Remove friend confirmation with friend's name
             document.querySelectorAll('.btn-remove').forEach(button => {
                 button.addEventListener('click', function(e) {
@@ -973,17 +896,8 @@ $pendingSentStmt->close();
                 });
             });
             
-            // Update visible friends count
-            function updateVisibleCount() {
-                const visibleCards = document.querySelectorAll('.friend-card[style=""]').length + 
-                                   document.querySelectorAll('.friend-card:not([style])').length;
-                const countElement = document.querySelector('.friends-count-small');
-                if (countElement) {
-                    countElement.textContent = `${visibleCards} friends`;
-                }
-            }
-            
             // Add smooth animations
+            const friendCards = document.querySelectorAll('.friend-card');
             friendCards.forEach((card, index) => {
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(20px)';
