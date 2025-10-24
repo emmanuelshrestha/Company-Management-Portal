@@ -1159,7 +1159,7 @@ if (isset($_GET['friend_id'])) {
     <div class="main-header">
         <h1 class="logo-text">Manexis</h1>
         <div class="search-bar-container">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><img src="../assets/images/search.png" alt="Home" style="width:20px;height:20px;margin-top:10px"></span>
             <input type="text" placeholder="Search for friends, posts, and more...">
         </div>
         <div class="header-right">
@@ -1194,33 +1194,34 @@ if (isset($_GET['friend_id'])) {
 
             <nav class="sidebar-nav">
                 <a href="../dashboard/dashboard.php" class="sidebar-nav-item">
-                    <div class="nav-icon">🏠</div>
-                    <span>Dashboard</span>
+                    <div class="nav-icon"><img src="../assets/images/home-icon.png" alt="Home" style="width:20px;height:20px;"></div>
+                    <span>Home</span>
                 </a>
                 <a href="../dashboard/profile.php" class="sidebar-nav-item">
-                    <div class="nav-icon">👤</div>
+                    <div class="nav-icon"><img src="../assets/images/profile.png" alt="Profile" style="width:20px;height:20px;"></div>
                     <span>Profile</span>
                 </a>
                 <a href="../dashboard/list_friends.php" class="sidebar-nav-item">
-                    <div class="nav-icon">👥</div>
+                    <div class="nav-icon"><img src="../assets/images/friends.png" alt="Friends" style="width:20px;height:20px;"></div>
                     <span>Friends List</span>
                     <?php if ($friend_count > 0): ?>
                         <span class="friends-count"><?php echo $friend_count; ?></span>
                     <?php endif; ?>
                 </a>
                 <a href="messages.php" class="sidebar-nav-item active">
-                    <div class="nav-icon">💬</div>
+                    <div class="nav-icon"><img src="../assets/images/messages.png" alt="Messages" style="width:20px;height:20px;"></div>
                     <span>Messages</span>
                 </a>
-                <a href="../dashboard/settings.php" class="sidebar-nav-item">
-                    <div class="nav-icon">⚙️</div>
+                <a href="../settings/settings.php" class="sidebar-nav-item">
+                    <div class="nav-icon"><img src="../assets/images/setting.png" alt="Settings" style="width:20px;height:20px;"></div>
                     <span>Settings</span>
                 </a>
-                <a href="../dashboard/logout.php" class="sidebar-nav-item" style="color: #e53e3e;">
-                    <div class="nav-icon">🚪</div>
+                <a href="../dashboard/logout.php" class="sidebar-nav-item" style="color:#e53e3e;">
+                    <div class="nav-icon"><img src="../assets/images/logout.png" alt="Logout" style="width:20px;height:20px;"></div>
                     <span>Logout</span>
                 </a>
             </nav>
+
         </aside>
 
         <!-- Main Content - EXPANDED -->

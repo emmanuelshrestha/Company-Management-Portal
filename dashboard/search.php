@@ -685,7 +685,7 @@ $postCountStmt->close();
     <div class="main-header">
         <h1 class="logo-text">Manexis</h1>
         <form method="GET" action="search.php" class="search-bar-container">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><img src="../assets/images/search.png" alt="Home" style="width:20px;height:20px;margin-top:10px"></span>
             <input type="text" name="search_query" placeholder="Search for friends, posts, and more..." value="<?php echo htmlspecialchars($search_query); ?>">
         </form>
         <div class="header-right">
@@ -719,31 +719,31 @@ $postCountStmt->close();
             </div>
 
             <nav class="sidebar-nav">
-                <a href="dashboard.php" class="sidebar-nav-item">
-                    <div class="nav-icon">🏠</div>
-                    <span>Dashboard</span>
+                <a href="dashboard.php" class="sidebar-nav-item active">
+                    <div class="nav-icon"><img src ="../assets/images/home-icon.png" alt="Home" style="width: 20px; height: 20px;"></div>
+                    <span>Home</span>
                 </a>
                 <a href="profile.php" class="sidebar-nav-item">
-                    <div class="nav-icon">👤</div>
-                    <span>My Profile</span>
+                    <div class="nav-icon"><img src ="../assets/images/profile.png" alt="Home" style="width: 20px; height: 20px;"></div>
+                    <span>Profile</span>
                 </a>
                 <a href="list_friends.php" class="sidebar-nav-item">
-                    <div class="nav-icon">👥</div>
+                    <div class="nav-icon"><img src ="../assets/images/friends.png" alt="Home" style="width: 20px; height: 20px;"></div>
                     <span>Friends List</span>
-                    <?php if ($friends_count > 0): ?>
-                        <span class="friends-count"><?php echo $friends_count; ?></span>
+                    <?php if ($friend_count > 0): ?>
+                        <span class="friends-count"><?php echo $friend_count; ?></span>
                     <?php endif; ?>
                 </a>
                 <a href="../messages/messages.php" class="sidebar-nav-item">
-                    <div class="nav-icon">💬</div>
+                    <div class="nav-icon"><img src ="../assets/images/messages.png" alt="Home" style="width: 20px; height: 20px;"></div>
                     <span>Messages</span>
                 </a>
                 <a href="../settings/settings.php" class="sidebar-nav-item">
-                    <div class="nav-icon">⚙️</div>
+                    <div class="nav-icon"><img src ="../assets/images/setting.png" alt="Home" style="width: 20px; height: 20px;"></div>
                     <span>Settings</span>
                 </a>
                 <a href="logout.php" class="sidebar-nav-item" style="color: #e53e3e;">
-                    <div class="nav-icon">🚪</div>
+                    <div class="nav-icon"><img src ="../assets/images/logout.png" alt="Home" style="width: 20px; height: 20px;"></div>
                     <span>Logout</span>
                 </a>
             </nav>
