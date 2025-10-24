@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // First, get all friends
-$friendsSql = "SELECT 
+$friendsSql = "SELECT DISTINCT
     u.id as friend_id,
     u.name as friend_name,
     u.profile_picture

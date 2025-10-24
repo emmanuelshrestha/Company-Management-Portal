@@ -1368,6 +1368,29 @@ textarea:focus,
     margin-top: 2px;
 }
 
+.conversation-unread-dot {
+    width: 8px;
+    height: 8px;
+    background: #e53e3e;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.conversation-item.unread {
+    background: #f7fafc;
+    border-left: 3px solid #667eea;
+}
+
+.conversation-item.unread .conversation-name {
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.conversation-item.unread .conversation-preview {
+    color: #2d3748;
+    font-weight: 500;
+}
+
 .chat-area {
     flex: 1;
     display: flex;
@@ -1469,10 +1492,10 @@ textarea:focus,
     opacity: 0.5;
 }
 
-@keyframes fadeIn {
+/* @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
-}
+} */
 
 /* =====================================================
    PRIVACY SETTINGS
