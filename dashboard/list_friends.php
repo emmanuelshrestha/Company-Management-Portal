@@ -679,10 +679,6 @@ $pendingSentStmt->close();
                     <div class="nav-icon">👤</div>
                     <span>Profile</span>
                 </a>
-                <a href="search.php" class="sidebar-nav-item">
-                    <div class="nav-icon">➕</div>
-                    <span>Add Friends</span>
-                </a>
                 <a href="list_friends.php" class="sidebar-nav-item active">
                     <div class="nav-icon">👥</div>
                     <span>Friends List</span>

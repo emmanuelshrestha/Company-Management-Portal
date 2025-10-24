@@ -1201,10 +1201,6 @@ if (isset($_GET['friend_id'])) {
                     <div class="nav-icon">👤</div>
                     <span>Profile</span>
                 </a>
-                <a href="../dashboard/add_friend.php" class="sidebar-nav-item">
-                    <div class="nav-icon">➕</div>
-                    <span>Add Friends</span>
-                </a>
                 <a href="../dashboard/list_friends.php" class="sidebar-nav-item">
                     <div class="nav-icon">👥</div>
                     <span>Friends List</span>
@@ -1294,7 +1290,7 @@ if (isset($_GET['friend_id'])) {
     </div>
 
     <script src="js/messages.js"></script>
-    
+
     <!-- DEBUG SCRIPT - Keep this separate from messages.js -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {

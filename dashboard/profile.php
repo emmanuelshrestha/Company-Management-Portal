@@ -903,10 +903,10 @@ function handleImageUpload($file, $type) {
     <!-- Main header -->
     <div class="main-header">
         <h1 class="logo-text">Manexis</h1>
-        <div class="search-bar-container">
+        <form method="GET" action="search.php" class="search-bar-container">
             <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Search for friends, posts, and more...">
-        </div>
+            <input type="text" name="search_query" placeholder="Search for friends, posts, and more...">
+        </form>
         <div class="header-right">
             <a href="create_post.php" class="action-btn">Create Post</a>
             <?php 
@@ -945,10 +945,6 @@ function handleImageUpload($file, $type) {
                 <a href="profile.php" class="sidebar-nav-item active">
                     <div class="nav-icon">👤</div>
                     <span>Profile</span>
-                </a>
-                <a href="add_friend.php" class="sidebar-nav-item">
-                    <div class="nav-icon">➕</div>
-                    <span>Add Friends</span>
                 </a>
                 <a href="list_friends.php" class="sidebar-nav-item">
                     <div class="nav-icon">👥</div>

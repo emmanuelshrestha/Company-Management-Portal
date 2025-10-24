@@ -1,3 +1,6 @@
+// create_post.js
+
+// DOM Elements
 const contentTextarea = document.getElementById('content');
 const charCounter = document.getElementById('charCounter');
 const charCount = document.getElementById('charCount');
@@ -111,6 +114,7 @@ function toggleUploadSection() {
 // Drag and drop functionality
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     uploadArea.addEventListener(eventName, preventDefaults, false);
+    imageUploadSection.addEventListener(eventName, preventDefaults, false);
 });
 
 function preventDefaults(e) {
@@ -120,21 +124,26 @@ function preventDefaults(e) {
 
 ['dragenter', 'dragover'].forEach(eventName => {
     uploadArea.addEventListener(eventName, highlight, false);
+    imageUploadSection.addEventListener(eventName, highlight, false);
 });
 
 ['dragleave', 'drop'].forEach(eventName => {
     uploadArea.addEventListener(eventName, unhighlight, false);
+    imageUploadSection.addEventListener(eventName, unhighlight, false);
 });
 
 function highlight() {
-    uploadArea.classList.add('dragover');
+    imageUploadSection.classList.add('dragover');
+    uploadArea.style.background = '#f0f7ff';
 }
 
 function unhighlight() {
-    uploadArea.classList.remove('dragover');
+    imageUploadSection.classList.remove('dragover');
+    uploadArea.style.background = '';
 }
 
 uploadArea.addEventListener('drop', handleDrop, false);
+imageUploadSection.addEventListener('drop', handleDrop, false);
 
 function handleDrop(e) {
     const dt = e.dataTransfer;
@@ -194,13 +203,38 @@ postForm.addEventListener('submit', function(e) {
     
     // Re-enable button if form doesn't submit (for debugging)
     setTimeout(() => {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+        if (submitBtn.disabled) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
     }, 5000);
 });
 
 // Auto-focus textarea
-contentTextarea.focus();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Create post page initialized');
+    contentTextarea.focus();
+    
+    // Initialize button state
+    updateSubmitButton();
+    
+    // Auto-dismiss messages
+    autoDismissMessages();
+});
 
-// Initialize button state
-updateSubmitButton();
+// Auto-dismiss messages
+function autoDismissMessages() {
+    setTimeout(() => {
+        document.querySelectorAll('.message').forEach(msg => {
+            if (msg.classList.contains('msg-error') || msg.classList.contains('msg-success') || msg.classList.contains('msg-info')) {
+                msg.style.opacity = '0';
+                msg.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    if (msg.parentNode) {
+                        msg.remove();
+                    }
+                }, 500);
+            }
+        });
+    }, 5000);
+}

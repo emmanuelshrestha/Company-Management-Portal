@@ -152,7 +152,7 @@ $sentRequestsStmt->execute();
 $sent_requests = $sentRequestsStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $sentRequestsStmt->close();
 
-// Count statistics
+// Count statistics for sidebar
 $friendsCountSql = "SELECT COUNT(*) as count FROM friends WHERE (user_id = ? OR friend_id = ?) AND status = 'approved'";
 $friendsStmt = $conn->prepare($friendsCountSql);
 $friendsStmt->bind_param("ii", $user_id, $user_id);
@@ -166,6 +166,14 @@ $pendingStmt->bind_param("i", $user_id);
 $pendingStmt->execute();
 $pending_received = $pendingStmt->get_result()->fetch_assoc()['count'];
 $pendingStmt->close();
+
+// Count user posts for sidebar
+$postCountSql = "SELECT COUNT(*) as post_count FROM posts WHERE user_id = ?";
+$postCountStmt = $conn->prepare($postCountSql);
+$postCountStmt->bind_param("i", $user_id);
+$postCountStmt->execute();
+$post_count = $postCountStmt->get_result()->fetch_assoc()['post_count'];
+$postCountStmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -176,31 +184,191 @@ $pendingStmt->close();
     <title>Search Users - <?php echo htmlspecialchars($user['name']); ?> - Manexis</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        /* Styles copied from add_friend.php */
-        .add-friends-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        /* Dashboard-style layout with subtle differences */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
         }
 
-        .add-friends-header {
+        /* Top header bar - slightly different shade */
+        .top-header-bar {
+            background: #34495e;  /* Subtle change from #4a4a4a */
+            height: 40px;
+            width: 100%;
+        }
+
+        /* Main header with logo and search - adjusted colors */
+        .main-header {
+            background: white;
+            padding: 15px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            margin-bottom: 0;
+            border-radius: 0;
+            border: none;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;  /* Darker blue for distinction */
+            margin: 0;
+        }
+
+        .search-bar-container {
+            flex: 1;
+            max-width: 500px;
+            margin: 0 40px;
+            position: relative;
+        }
+
+        .search-bar-container input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: none;
+            background: #ecf0f1;  /* Lighter search bar */
+            border-radius: 25px;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Main layout container */
+        .dashboard-container {
+            display: flex;
+            max-width: 1400px;
+            margin: 20px auto;
+            gap: 20px;
+            padding: 0 20px;
+        }
+
+        /* Left sidebar - kept but with profile adjustments */
+        .left-sidebar {
+            width: 280px;
+            position: sticky;
+            top: 90px;
+            height: calc(100vh - 110px);
+            overflow-y: auto;
+        }
+
+        .profile-section-sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar-nav {
+            background: white;
+            border-radius: 12px;
+            padding: 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar-nav-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-nav-item:hover {
+            background: #ecf0f1;  /* Lighter hover for profile */
+        }
+
+        .sidebar-nav-item.active {
+            border-left: 4px solid #3498db;  /* Blue border for active */
+            background: #f0f4f8;
+            color: #3498db;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            max-width: 800px;
+        }
+
+        /* Right sidebar */
+        .right-sidebar {
+            width: 320px;
+            position: sticky;
+            top: 90px;
+            height: calc(100vh - 110px);
+            overflow-y: auto;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar-card h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #1a202c;
+            border-bottom: 2px solid #f7fafc;
+            padding-bottom: 10px;
+        }
+
+        /* Search-specific styles */
+        .search-hero {
             background: white;
             border-radius: 12px;
             padding: 30px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             text-align: center;
         }
 
-        .add-friends-header h1 {
+        .search-hero h1 {
             margin: 0 0 10px 0;
             color: #2d3748;
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
         }
 
-        .add-friends-header p {
-            margin: 0;
+        .search-hero p {
+            margin: 0 0 20px 0;
             color: #718096;
             font-size: 16px;
             max-width: 600px;
@@ -208,66 +376,8 @@ $pendingStmt->close();
             margin-right: auto;
         }
 
-        /* Stats Grid */
-        .friends-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .friends-stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .friends-stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        .friends-stat-number {
-            font-size: 36px;
-            font-weight: 700;
-            color: #667eea;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .friends-stat-label {
-            color: #718096;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .friends-stat-actions {
-            margin-top: 15px;
-        }
-
-        /* Search Section */
-        .search-hero {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .search-hero h2 {
-            margin: 0 0 20px 0;
-            color: #2d3748;
-            font-size: 24px;
-            font-weight: 600;
-        }
-
         .search-container {
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
         }
 
@@ -278,16 +388,16 @@ $pendingStmt->close();
 
         .search-input {
             flex: 1;
-            padding: 15px 20px;
+            padding: 12px 20px;
             border: 2px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 8px;
             font-size: 16px;
             transition: all 0.3s;
         }
 
         .search-input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
             outline: none;
         }
 
@@ -296,12 +406,12 @@ $pendingStmt->close();
             background: white;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             overflow: hidden;
         }
 
         .section-header {
-            padding: 25px 30px;
+            padding: 20px 25px;
             border-bottom: 2px solid #f7fafc;
             display: flex;
             justify-content: space-between;
@@ -331,10 +441,10 @@ $pendingStmt->close();
         .user-card {
             display: flex;
             align-items: center;
-            padding: 25px 30px;
+            padding: 20px 25px;
             border-bottom: 1px solid #f7fafc;
             transition: background-color 0.2s;
-            gap: 20px;
+            gap: 15px;
         }
 
         .user-card:hover {
@@ -346,19 +456,19 @@ $pendingStmt->close();
         }
 
         .user-avatar-med {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: #667eea;
+            background: #3498db;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             background-size: cover;
             background-position: center;
-            border: 3px solid white;
+            border: 2px solid white;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             flex-shrink: 0;
         }
@@ -369,7 +479,7 @@ $pendingStmt->close();
         }
 
         .user-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #2d3748;
             margin-bottom: 4px;
@@ -383,25 +493,36 @@ $pendingStmt->close();
 
         .user-status {
             color: #48bb78;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
         }
 
         .user-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-shrink: 0;
+        }
+
+        /* Quick Stats in sidebar - blue accents */
+        .quick-stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
         }
 
         /* Empty States */
         .empty-state {
-            padding: 60px 30px;
+            padding: 40px 20px;
             text-align: center;
         }
 
-        .empty-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
+        .empty-state-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
             opacity: 0.5;
         }
 
@@ -409,87 +530,102 @@ $pendingStmt->close();
         .pending-badge {
             background: #ed8936;
             color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
         }
 
-        /* Top Navigation Styles */
-        .top-header-bar {
-            background: #4a4a4a;
-            height: 40px;
-            width: 100%;
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .main-header {
+        .stat-card {
             background: white;
-            padding: 15px 40px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            margin-bottom: 0;
-            border-radius: 0;
-            border: none;
-            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .logo-text {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-            margin: 0;
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         }
 
-        .search-bar-container {
-            flex: 1;
-            max-width: 500px;
-            margin: 0 40px;
-            position: relative;
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #3498db;
+            display: block;
+            margin-bottom: 5px;
         }
 
-        .search-bar-container input {
-            width: 100%;
-            padding: 12px 20px 12px 45px;
-            border: none;
-            background: #f0f2f5;
-            border-radius: 25px;
-            font-size: 14px;
-            margin-bottom: 0;
+        .stat-label {
+            color: #718096;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .search-icon-main {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #666;
+        /* Scrollbar styling */
+        .left-sidebar::-webkit-scrollbar,
+        .right-sidebar::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
+        .left-sidebar::-webkit-scrollbar-track,
+        .right-sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
 
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .friends-stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+        .left-sidebar::-webkit-scrollbar-thumb,
+        .right-sidebar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .right-sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .left-sidebar {
+                display: none;
+            }
+            
+            .dashboard-container {
+                padding: 0 15px;
+            }
+            
+            .main-content {
+                max-width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 768px) {
-            .add-friends-container {
-                padding: 15px;
+            .main-header {
+                padding: 15px 20px;
             }
 
-            .search-hero {
-                padding: 30px 20px;
+            .search-bar-container {
+                display: none;
+            }
+
+            .logo-text {
+                font-size: 20px;
             }
 
             .search-form-group {
@@ -509,24 +645,16 @@ $pendingStmt->close();
                 flex-wrap: wrap;
             }
 
-            .main-header {
-                padding: 15px 20px;
+            .search-hero {
+                padding: 20px;
             }
 
-            .search-bar-container {
-                display: none;
-            }
-
-            .logo-text {
-                font-size: 20px;
+            .search-hero h1 {
+                font-size: 24px;
             }
         }
 
         @media (max-width: 480px) {
-            .friends-stats-grid {
-                grid-template-columns: 1fr;
-            }
-
             .user-actions {
                 flex-direction: column;
                 width: 100%;
@@ -536,17 +664,24 @@ $pendingStmt->close();
                 width: 100%;
                 text-align: center;
             }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body class="dashboard-page">
-    <!-- Top Navigation -->
+    <input type="hidden" id="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+    
+    <!-- Top dark header bar -->
     <div class="top-header-bar"></div>
 
+    <!-- Main header -->
     <div class="main-header">
         <h1 class="logo-text">Manexis</h1>
         <form method="GET" action="search.php" class="search-bar-container">
-            <span class="search-icon-main">🔍</span>
+            <span class="search-icon">🔍</span>
             <input type="text" name="search_query" placeholder="Search for friends, posts, and more..." value="<?php echo htmlspecialchars($search_query); ?>">
         </form>
         <div class="header-right">
@@ -561,167 +696,255 @@ $pendingStmt->close();
         </div>
     </div>
 
-    <!-- Main Search Content -->
-    <div class="add-friends-container">
-        <!-- Messages -->
-        <?php if (!empty($message)): ?>
-            <div class="message <?php echo $msgClass; ?>" style="margin-bottom: 20px;">
-                <?php echo $message; ?>
+    <!-- Main dashboard container -->
+    <div class="dashboard-container">
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <div class="profile-section-sidebar">
+                <?php 
+                if (!empty($user['profile_picture'])) {
+                    echo '<div class="user-avatar" style="background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) . ');"></div>';
+                } else {
+                    echo '<div class="user-avatar">' . strtoupper(substr($user['name'] ?? 'U', 0, 1)) . '</div>';
+                }
+                ?>
+                <div>
+                    <div style="font-weight: 600; font-size: 16px; color: #2d3748;"><?php echo htmlspecialchars($user['name'] ?? 'User'); ?></div>
+                    <div style="font-size: 14px; color: #718096;">@<?php echo htmlspecialchars(strtolower(str_replace(' ', '', $user['name'] ?? 'user'))); ?></div>
+                </div>
             </div>
-        <?php endif; ?>
 
-        <!-- Header -->
-        <div class="add-friends-header">
-            <h1>Connect with Friends</h1>
-            <p>Search for users by name or email address to send friend requests and grow your network</p>
-        </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.php" class="sidebar-nav-item">
+                    <div class="nav-icon">🏠</div>
+                    <span>Dashboard</span>
+                </a>
+                <a href="profile.php" class="sidebar-nav-item">
+                    <div class="nav-icon">👤</div>
+                    <span>My Profile</span>
+                </a>
+                <a href="list_friends.php" class="sidebar-nav-item">
+                    <div class="nav-icon">👥</div>
+                    <span>Friends List</span>
+                    <?php if ($friends_count > 0): ?>
+                        <span class="friends-count"><?php echo $friends_count; ?></span>
+                    <?php endif; ?>
+                </a>
+                <a href="../messages/messages.php" class="sidebar-nav-item">
+                    <div class="nav-icon">💬</div>
+                    <span>Messages</span>
+                </a>
+                <a href="edit-profile.php" class="sidebar-nav-item">
+                    <div class="nav-icon">⚙️</div>
+                    <span>Settings</span>
+                </a>
+                <a href="logout.php" class="sidebar-nav-item" style="color: #e53e3e;">
+                    <div class="nav-icon">🚪</div>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
 
-        <!-- Quick Stats -->
-        <div class="friends-stats-grid">
-            <div class="friends-stat-card">
-                <span class="friends-stat-number"><?php echo $friends_count; ?></span>
-                <div class="friends-stat-label">Total Friends</div>
-                <div class="friends-stat-actions">
-                    <a href="list_friends.php" class="action-btn btn-small">View All</a>
-                </div>
-            </div>
-            
-            <div class="friends-stat-card">
-                <span class="friends-stat-number"><?php echo count($sent_requests); ?></span>
-                <div class="friends-stat-label">Pending Sent</div>
-                <div class="friends-stat-actions">
-                    <a href="#sent-requests" class="action-btn secondary btn-small">View Below</a>
-                </div>
-            </div>
-            
-            <div class="friends-stat-card">
-                <span class="friends-stat-number"><?php echo $pending_received; ?></span>
-                <div class="friends-stat-label">Pending Received</div>
-                <div class="friends-stat-actions">
-                    <a href="dashboard.php" class="action-btn secondary btn-small">View in Dashboard</a>
-                </div>
-            </div>
-            
-            <div class="friends-stat-card">
-                <span class="friends-stat-number">👥</span>
-                <div class="friends-stat-label">Your Network</div>
-                <div class="friends-stat-actions">
-                    <a href="list_friends.php" class="action-btn secondary btn-small">Manage Friends</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Search Section -->
-        <div class="search-hero">
-            <h2>Find People You Know</h2>
-            <div class="search-container">
-                <form method="GET" action="search.php">
-                    <div class="search-form-group">
-                        <input type="text" name="search_query" value="<?php echo htmlspecialchars($search_query); ?>" 
-                               class="search-input" placeholder="Enter name or email address..." required>
-                        <button type="submit" class="action-btn">🔍 Search</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Search Results -->
-        <?php if (!empty($search_results)): ?>
-            <div class="results-section">
-                <div class="section-header">
-                    <h2>Search Results</h2>
-                    <span class="results-count"><?php echo count($search_results); ?> found</span>
-                </div>
-                <div class="users-grid">
-                    <?php foreach ($search_results as $result): ?>
-                        <div class="user-card">
-                            <div class="user-avatar-med" style="<?php echo !empty($result['profile_picture']) ? 'background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($result['profile_picture']) . ');' : ''; ?>">
-                                <?php if (empty($result['profile_picture'])) echo strtoupper(substr($result['name'], 0, 1)); ?>
-                            </div>
-                            
-                            <div class="user-info">
-                                <div class="user-name"><?php echo htmlspecialchars($result['name']); ?></div>
-                                <div class="user-email"><?php echo htmlspecialchars($result['email']); ?></div>
-                                <div class="user-status">✅ Verified User</div>
-                            </div>
-                            
-                            <div class="user-actions">
-                                <a href="friend_profile.php?id=<?php echo $result['id']; ?>" class="action-btn secondary btn-small">
-                                    👀 View Profile
-                                </a>
-                                <form method="POST" action="" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                                    <input type="hidden" name="send_request" value="1">
-                                    <input type="hidden" name="friend_id" value="<?php echo $result['id']; ?>">
-                                    <button type="submit" class="action-btn btn-small" data-user-name="<?php echo htmlspecialchars($result['name']); ?>">
-                                        ➕ Add Friend
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php elseif (!empty($search_query) && empty($search_results) && empty($message)): ?>
-            <div class="results-section">
-                <div class="section-header">
-                    <h2>Search Results</h2>
-                    <span class="results-count">0 found</span>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-icon">🔍</div>
-                    <h3 style="color: #2d3748; margin-bottom: 10px;">No users found</h3>
-                    <p style="color: #718096;">
-                        No users found matching "<strong><?php echo htmlspecialchars($search_query); ?></strong>"<br>
-                        Try searching with a different name or email address.
-                    </p>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <!-- Pending Sent Requests -->
-        <div class="results-section" id="sent-requests">
-            <div class="section-header">
-                <h2>Pending Sent Requests</h2>
-                <span class="results-count"><?php echo count($sent_requests); ?> pending</span>
-            </div>
-            
-            <?php if (empty($sent_requests)): ?>
-                <div class="empty-state">
-                    <div class="empty-icon">📤</div>
-                    <h3 style="color: #2d3748; margin-bottom: 10px;">No pending requests</h3>
-                    <p style="color: #718096;">
-                        You haven't sent any friend requests yet.<br>
-                        Use the search above to find people and send requests!
-                    </p>
-                </div>
-            <?php else: ?>
-                <div class="users-grid">
-                    <?php foreach ($sent_requests as $request): ?>
-                        <div class="user-card">
-                            <div class="user-avatar-med" style="<?php echo !empty($request['profile_picture']) ? 'background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($request['profile_picture']) . ');' : ''; ?>">
-                                <?php if (empty($request['profile_picture'])) echo strtoupper(substr($request['name'], 0, 1)); ?>
-                            </div>
-                            
-                            <div class="user-info">
-                                <div class="user-name"><?php echo htmlspecialchars($request['name']); ?></div>
-                                <div class="user-email"><?php echo htmlspecialchars($request['email']); ?></div>
-                                <div class="user-status">
-                                    Request sent: <?php echo date('M j, Y', strtotime($request['created_at'])); ?>
-                                </div>
-                            </div>
-                            
-                            <div class="user-actions">
-                                <a href="friend_profile.php?id=<?php echo $request['friend_id']; ?>" class="action-btn secondary btn-small">
-                                    👀 View Profile
-                                </a>
-                                <span class="pending-badge">⏳ Pending</span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Messages -->
+            <?php if (!empty($message)): ?>
+                <div class="message <?php echo $msgClass; ?>" style="margin-bottom: 20px;">
+                    <?php echo $message; ?>
                 </div>
             <?php endif; ?>
-        </div>
+
+            <!-- Search Hero Section -->
+            <div class="search-hero">
+                <h1>Connect with Friends</h1>
+                <p>Search for users by name or email address to send friend requests and grow your network</p>
+                <div class="search-container">
+                    <form method="GET" action="search.php">
+                        <div class="search-form-group">
+                            <input type="text" name="search_query" value="<?php echo htmlspecialchars($search_query); ?>" 
+                                   class="search-input" placeholder="Enter name or email address..." required>
+                            <button type="submit" class="action-btn">🔍 Search</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number"><?php echo $friends_count; ?></span>
+                    <div class="stat-label">Total Friends</div>
+                    <div style="margin-top: 10px;">
+                        <a href="list_friends.php" class="action-btn btn-small">View All</a>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <span class="stat-number"><?php echo count($sent_requests); ?></span>
+                    <div class="stat-label">Pending Sent</div>
+                    <div style="margin-top: 10px;">
+                        <a href="#sent-requests" class="action-btn secondary btn-small">View Below</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <?php if (!empty($search_results)): ?>
+                <div class="results-section">
+                    <div class="section-header">
+                        <h2>Search Results</h2>
+                        <span class="results-count"><?php echo count($search_results); ?> found</span>
+                    </div>
+                    <div class="users-grid">
+                        <?php foreach ($search_results as $result): ?>
+                            <div class="user-card">
+                                <div class="user-avatar-med" style="<?php echo !empty($result['profile_picture']) ? 'background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($result['profile_picture']) . ');' : ''; ?>">
+                                    <?php if (empty($result['profile_picture'])) echo strtoupper(substr($result['name'], 0, 1)); ?>
+                                </div>
+                                
+                                <div class="user-info">
+                                    <div class="user-name"><?php echo htmlspecialchars($result['name']); ?></div>
+                                    <div class="user-email"><?php echo htmlspecialchars($result['email']); ?></div>
+                                    <div class="user-status">✅ Verified User</div>
+                                </div>
+                                
+                                <div class="user-actions">
+                                    <a href="friend_profile.php?id=<?php echo $result['id']; ?>" class="action-btn secondary btn-small">
+                                        👀 View Profile
+                                    </a>
+                                    <form method="POST" action="" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="send_request" value="1">
+                                        <input type="hidden" name="friend_id" value="<?php echo $result['id']; ?>">
+                                        <button type="submit" class="action-btn btn-small" data-user-name="<?php echo htmlspecialchars($result['name']); ?>">
+                                            ➕ Add Friend
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php elseif (!empty($search_query) && empty($search_results) && empty($message)): ?>
+                <div class="results-section">
+                    <div class="section-header">
+                        <h2>Search Results</h2>
+                        <span class="results-count">0 found</span>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3 style="color: #2d3748; margin-bottom: 10px;">No users found</h3>
+                        <p style="color: #718096;">
+                            No users found matching "<strong><?php echo htmlspecialchars($search_query); ?></strong>"<br>
+                            Try searching with a different name or email address.
+                        </p>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Pending Sent Requests -->
+            <div class="results-section" id="sent-requests">
+                <div class="section-header">
+                    <h2>Pending Sent Requests</h2>
+                    <span class="results-count"><?php echo count($sent_requests); ?> pending</span>
+                </div>
+                
+                <?php if (empty($sent_requests)): ?>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📤</div>
+                        <h3 style="color: #2d3748; margin-bottom: 10px;">No pending requests</h3>
+                        <p style="color: #718096;">
+                            You haven't sent any friend requests yet.<br>
+                            Use the search above to find people and send requests!
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <div class="users-grid">
+                        <?php foreach ($sent_requests as $request): ?>
+                            <div class="user-card">
+                                <div class="user-avatar-med" style="<?php echo !empty($request['profile_picture']) ? 'background-image: url(../../uploads/profile_pictures/' . htmlspecialchars($request['profile_picture']) . ');' : ''; ?>">
+                                    <?php if (empty($request['profile_picture'])) echo strtoupper(substr($request['name'], 0, 1)); ?>
+                                </div>
+                                
+                                <div class="user-info">
+                                    <div class="user-name"><?php echo htmlspecialchars($request['name']); ?></div>
+                                    <div class="user-email"><?php echo htmlspecialchars($request['email']); ?></div>
+                                    <div class="user-status">
+                                        Request sent: <?php echo date('M j, Y', strtotime($request['created_at'])); ?>
+                                    </div>
+                                </div>
+                                
+                                <div class="user-actions">
+                                    <a href="friend_profile.php?id=<?php echo $request['friend_id']; ?>" class="action-btn secondary btn-small">
+                                        👀 View Profile
+                                    </a>
+                                    <span class="pending-badge">⏳ Pending</span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="right-sidebar">
+            <!-- Quick Stats -->
+            <div class="sidebar-card">
+                <h3>Network Stats</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="quick-stats-item">
+                        <span style="color: #718096; font-size: 14px;">👥 Friends</span>
+                        <span style="font-weight: 600; color: #2d3748;"><?php echo $friends_count; ?></span>
+                    </div>
+                    <div class="quick-stats-item">
+                        <span style="color: #718096; font-size: 14px;">📬 Sent Requests</span>
+                        <span style="font-weight: 600; color: #2d3748;"><?php echo count($sent_requests); ?></span>
+                    </div>
+                    <div class="quick-stats-item">
+                        <span style="color: #718096; font-size: 14px;">📥 Received Requests</span>
+                        <span style="font-weight: 600; color: #2d3748;"><?php echo $pending_received; ?></span>
+                    </div>
+                    <div class="quick-stats-item">
+                        <span style="color: #718096; font-size: 14px;">📝 Your Posts</span>
+                        <span style="font-weight: 600; color: #2d3748;"><?php echo $post_count; ?></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="sidebar-card">
+                <h3>Quick Actions</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="list_friends.php" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; text-decoration: none; color: #2d3748; transition: background 0.2s;">
+                        <span>👥</span>
+                        <span>All Friends</span>
+                    </a>
+                    <a href="dashboard.php" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; text-decoration: none; color: #2d3748; transition: background 0.2s;">
+                        <span>🏠</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="profile.php" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; text-decoration: none; color: #2d3748; transition: background 0.2s;">
+                        <span>👤</span>
+                        <span>My Profile</span>
+                    </a>
+                    <a href="create_post.php" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; text-decoration: none; color: #2d3748; transition: background 0.2s;">
+                        <span>✏️</span>
+                        <span>Create Post</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search Tips -->
+            <div class="sidebar-card">
+                <h3>Search Tips</h3>
+                <div style="font-size: 13px; color: #718096; line-height: 1.6;">
+                    <p style="margin: 0 0 10px 0;">🔍 <strong>Search by name:</strong> Enter full or partial names</p>
+                    <p style="margin: 0 0 10px 0;">📧 <strong>Search by email:</strong> Enter complete email addresses</p>
+                    <p style="margin: 0;">👥 <strong>Find friends:</strong> Connect with verified users only</p>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <script src="js/search.js"></script>
